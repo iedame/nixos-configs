@@ -1,0 +1,85 @@
+{ pkgs, ... }:
+
+{
+  # Enable the X11 windowing system.
+  # You can disable this if you're only using the Wayland session.
+  services.xserver.enable = true;
+
+  # Enable the KDE Plasma Desktop Environment.
+  services.displayManager.sddm.enable = true;
+  services.desktopManager.plasma6.enable = true;
+
+  # Configure keymap in X11
+  services.xserver.xkb = {
+    layout = "us";
+    variant = "";
+  };
+
+  # Enable CUPS to print documents.
+  services.printing.enable = true;
+
+  # Enable Flatpak
+  services.flatpak.enable = true;
+
+  # Enable sound with pipewire.
+  services.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+  };
+
+  services.hardware.openrgb.enable = true;
+
+  hardware.bluetooth.enable = true; # enables support for Bluetooth
+  hardware.bluetooth.powerOnBoot = true; # powers up the default Bluetooth controller on boot
+
+  # Enable I2C for ddcutil (monitor display control)
+  hardware.i2c.enable = true;
+
+  services.blueman.enable = false;
+
+  # Install firefox.
+  programs.firefox.enable = true;
+
+  # Install Thunderbird
+  programs.thunderbird.enable = true;
+
+  # Install 1Password
+  programs._1password.enable = true;
+  programs._1password-gui = {
+    enable = true;
+    # Certain features, including CLI integration and system authentication support,
+    # require enabling PolKit integration on some desktop environments (e.g. Plasma).
+    polkitPolicyOwners = [ "haoji" ];
+  };
+
+  # Desktop applications
+  environment.systemPackages = with pkgs; [
+    # keep-sorted start case=no
+    ddcui
+    element-desktop
+    filezilla
+    gnome-disk-utility
+    gparted
+    gsmartcontrol
+    jetbrains.idea
+    keepassxc
+    onlyoffice-desktopeditors
+    openrgb
+    pika-backup
+    planify
+    pomodoro-gtk
+    proton-authenticator
+    proton-pass
+    proton-vpn
+    resources
+    spotify
+    telegram-desktop
+    vlc
+    xournalpp
+    # keep-sorted end
+  ];
+}
