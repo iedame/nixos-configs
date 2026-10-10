@@ -1,0 +1,167 @@
+name: CI
+
+# Checks every pull request before it is merged, including the bot's weekly
+# flake-update PRs: does the flake still evaluate and stay formatted, do both
+# hosts still build, and which packages change.
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Evaluates the NixOS configuration and builds the formatting check
+  # (nixfmt + keep-sorted).
+  check:
+    name: Flake check
+    # The `secrets` flake input is a private repo, so this needs the deploy
+    # key. Secrets aren't available to pull requests from forks: skip those
+    # instead of failing halfway.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v35
+
+      - name: Load deploy key for the secrets repo
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SECRETS_DEPLOY_KEY }}
+
+      - name: nix flake check
+        run: nix flake check --print-build-logs
+
+  # Builds each host's full system, and for pull requests also the base
+  # branch's, to report what the change does to the installed packages.
+  build:
+    name: Build ${{ matrix.host }}
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: Aurora
+            os: ubuntu-latest
+            attr: nixosConfigurations.Aurora.config.system.build.toplevel
+          - host: Kawagoe
+            os: macos-latest
+            attr: darwinConfigurations.Kawagoe.system
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Aurora's system is far bigger than the runner's free disk; this
+      # removes preinstalled software and gives the space to /nix.
+      - name: Free disk space
+        if: runner.os == 'Linux'
+        uses: wimpysworld/nothing-but-nix@v10
+        with:
+          hatchet-protocol: rampage
+          witness-carnage: true
+          nix-permission-edict: true
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v35
+        with:
+          nix_conf: |
+            keep-outputs = true
+            ${{ runner.os == 'Linux' && 'build-dir = /nix/build' || '' }}
+
+      - name: Load deploy key for the secrets repo
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SECRETS_DEPLOY_KEY }}
+
+      # Built first: the new system shares most of its store paths with it,
+      # so the second build only fetches and builds what changed.
+      - name: Build the base branch's ${{ matrix.host }}
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: github:${{ github.repository }}/${{ github.event.pull_request.base.sha }}
+          ATTR: ${{ matrix.attr }}
+        run: nix build "${BASE}#${ATTR}" --out-link old-result --fallback
+
+      - name: Build ${{ matrix.host }}
+        env:
+          ATTR: ${{ matrix.attr }}
+        run: nix build ".#${ATTR}" --out-link result --fallback --print-build-logs
+
+      - name: Package diff
+        if: github.event_name == 'pull_request'
+        env:
+          HOST: ${{ matrix.host }}
+        run: |
+          {
+            echo "### ${HOST}"
+            echo ""
+            echo '```'
+            nix run --inputs-from . nixpkgs#nvd -- --color never diff ./old-result ./result
+            echo '```'
+          } > "diff-${HOST}.md"
+          cat "diff-${HOST}.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the diff
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: diff-${{ matrix.host }}
+          path: diff-${{ matrix.host }}.md
+          retention-days: 7
+
+  # One comment on the pull request with both hosts' diffs, updated in place
+  # when the PR gets new commits.
+  comment:
+    name: Comment package diff
+    needs: build
+    # Also when one host failed to build, so the other's diff still shows
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download the diffs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: diff-*
+          merge-multiple: true
+
+      - name: Post or update the comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          marker='<!-- ci-package-diff -->'
+          {
+            echo "$marker"
+            echo "## Package diff"
+            echo ""
+            if ls diff-*.md > /dev/null 2>&1; then
+              cat diff-*.md
+            else
+              echo "No diff was produced: the builds failed before finishing."
+            fi
+            echo ""
+            echo "[Workflow run]($RUN_URL)"
+          } > body.md
+
+          # Update the existing comment if there is one, otherwise create it
+          id=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"$marker\"))] | first | .id // empty")
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/${REPO}/issues/comments/${id}" -F body=@body.md > /dev/null
+          else
+            gh api --method POST "repos/${REPO}/issues/${PR}/comments" -F body=@body.md > /dev/null
+          fi
