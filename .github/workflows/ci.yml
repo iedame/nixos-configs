@@ -74,9 +74,13 @@ jobs:
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
         with:
+          # The extra substituter is the cache the Aurora job uploads to
+          # (empty, so ignored, until the CACHE_* variables are set)
           nix_conf: |
             keep-outputs = true
             ${{ runner.os == 'Linux' && 'build-dir = /nix/build' || '' }}
+            extra-substituters = ${{ matrix.host == 'Aurora' && vars.CACHE_URL || '' }}
+            extra-trusted-public-keys = ${{ matrix.host == 'Aurora' && vars.CACHE_PUBLIC_KEY || '' }}
 
       - name: Load deploy key for the secrets repo
         uses: webfactory/ssh-agent@v0.10.0
@@ -96,6 +100,69 @@ jobs:
         env:
           ATTR: ${{ matrix.attr }}
         run: nix build ".#${ATTR}" --out-link result --fallback --print-build-logs
+
+      # Uploads the few packages that have to be compiled, so the next run and
+      # Aurora itself download them instead. The bucket is public: only
+      # packages named in CACHE_PATTERN go in, never the unfree ones.
+      - name: Upload compiled packages to the cache
+        if: matrix.host == 'Aurora' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
+        env:
+          CACHE_PATTERN: ^(paperless-ngx|python3[.][0-9]+-ocrmypdf|tesseract|[a-z_]+[.]traineddata|xwayland|asf-ui|glibc-locales)(-|$)
+          CACHE_URL: ${{ vars.CACHE_URL }}
+          CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
+          CACHE_SIGNING_KEY: ${{ secrets.CACHE_SIGNING_KEY }}
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ vars.CACHE_ENDPOINT }}
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: true
+        run: |
+          work="$RUNNER_TEMP/cache"
+          mkdir -p "$work"
+
+          # Paths of the new system that cache.nixos.org doesn't have, that
+          # match the pattern and aren't in the bucket yet
+          nix path-info --recursive --sigs ./result | awk '
+            /cache\.nixos\.org-1:/ { next }
+            {
+              name = $1
+              sub(/^\/nix\/store\/[a-z0-9]+-/, "", name)
+              if (name ~ ENVIRON["CACHE_PATTERN"]) print $1
+            }' > "$work/candidates"
+          while read -r path; do
+            hash="${path#/nix/store/}"
+            hash="${hash%%-*}"
+            curl --fail --silent --head --output /dev/null "${CACHE_URL%/}/${hash}.narinfo" \
+              || echo "$path"
+          done < "$work/candidates" > "$work/missing"
+
+          echo "$(wc -l < "$work/candidates") matching, $(wc -l < "$work/missing") to upload"
+          if [ ! -s "$work/missing" ]; then
+            exit 0
+          fi
+          cat "$work/missing"
+
+          # A binary cache only accepts a path together with its dependencies,
+          # so the whole closure goes to a local cache first and only the
+          # wanted paths are uploaded from there
+          (umask 077 && printf '%s\n' "$CACHE_SIGNING_KEY" > "$work/key")
+          xargs nix copy \
+            --to "file://$work/store?secret-key=$work/key&compression=zstd" \
+            < "$work/missing"
+          rm "$work/key"
+
+          {
+            echo nix-cache-info
+            while read -r path; do
+              hash="${path#/nix/store/}"
+              hash="${hash%%-*}"
+              sed -n 's/^URL: //p' "$work/store/${hash}.narinfo"
+              echo "${hash}.narinfo"
+            done < "$work/missing"
+          } > "$work/files"
+          nix run --inputs-from . nixpkgs#rclone -- copy --no-traverse \
+            --files-from "$work/files" "$work/store" "r2:${CACHE_BUCKET}"
 
       - name: Package diff
         if: github.event_name == 'pull_request'
