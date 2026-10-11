@@ -8,6 +8,13 @@
   # Decrypted at activation to /run/agenix/test (root:wheel 0400)
   age.secrets.test.file = "${inputs.secrets}/kawagoe/test.age";
 
+  # linkding runs as a user agent (users/haoji), so its environment file has
+  # to be readable by that user rather than by root
+  age.secrets."linkding.env" = {
+    file = "${inputs.secrets}/kawagoe/linkding.env.age";
+    owner = "haoji";
+  };
+
   # agenix CLI for editing the secrets in ~/.config/nixos-secrets (identity:
   # ~/.ssh/agenix)
   environment.systemPackages = [
