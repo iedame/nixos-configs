@@ -1,35 +1,14 @@
 { pkgs, ... }:
 
 {
-  # Enable the X11 windowing system.
-  # You can disable this if you're only using the Wayland session.
-  services.xserver.enable = true;
-
-  # Enable the KDE Plasma Desktop Environment.
-  services.displayManager.sddm.enable = true;
-  services.desktopManager.plasma6.enable = true;
-
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "us";
-    variant = "";
-  };
+  # KDE Plasma 6 with SDDM and PipeWire, US layout (modules/nixos/plasma.nix)
+  custom.plasma.enable = true;
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
 
   # Enable Flatpak
   services.flatpak.enable = true;
-
-  # Enable sound with pipewire.
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
 
   services.hardware.openrgb.enable = true;
 

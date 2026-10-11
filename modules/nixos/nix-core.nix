@@ -30,6 +30,10 @@ in
       default = [ ];
       description = "Extra platforms for cross-compilation support";
     };
+    ciCache.enable = lib.mkEnableOption ''
+      downloading the packages this repository's CI builds and uploads (the
+      ones cache.nixos.org doesn't have; see .github/workflows/ci.yml)
+    '';
     permittedInsecurePackages = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -78,6 +82,14 @@ in
       })
       (lib.mkIf (cfg.extraPlatforms != [ ]) {
         nix.settings.extra-platforms = cfg.extraPlatforms;
+      })
+      (lib.mkIf cfg.ciCache.enable {
+        nix.settings = {
+          extra-substituters = [ "https://cache.nixkeeper.com" ];
+          extra-trusted-public-keys = [
+            "nixos-configs-cache-1:CW5tDg3uwOBmz8C2a29loFeNcqo4sjInPjTgd0zIhOc="
+          ];
+        };
       })
       (lib.mkIf (cfg.permittedInsecurePackages != [ ]) {
         nixpkgs.config.permittedInsecurePackages = cfg.permittedInsecurePackages;

@@ -14,15 +14,11 @@
 
   # Flakes, unfree, nixpkgs registry pin, weekly GC + store optimisation
   # (modules/nixos/nix-core.nix)
-  custom.nix-core.enable = true;
-
-  # The few packages this host would otherwise compile (Paperless and its
-  # OCR stack, mostly), built and uploaded by CI (.github/workflows/ci.yml)
-  nix.settings = {
-    extra-substituters = [ "https://cache.nixkeeper.com" ];
-    extra-trusted-public-keys = [
-      "nixos-configs-cache-1:CW5tDg3uwOBmz8C2a29loFeNcqo4sjInPjTgd0zIhOc="
-    ];
+  custom.nix-core = {
+    enable = true;
+    # The few packages this host would otherwise compile (Paperless and its
+    # OCR stack, mostly), built and uploaded by CI
+    ciCache.enable = true;
   };
 
   # Bootloader.

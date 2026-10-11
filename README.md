@@ -10,6 +10,7 @@ home-manager. Layout inspired by
 |---|---|---|
 | [Aurora](hosts/Aurora/README.md) | NixOS, x86_64-linux | Desktop, gaming, home server (Immich, Jellyfin, Forgejo, Vaultwarden, …) |
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
+| [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (2011 MacBook Pro), updates itself from this repo |
 
 ## Layout
 
@@ -30,7 +31,8 @@ on what they need, e.g. `custom.nix-core.enable = true;`.
 
 ## Usage
 
-Rebuild the current machine (both hosts define this alias, which runs `nh`):
+Rebuild the current machine (Aurora and Kawagoe define this alias, which runs
+`nh`; Tsukuba updates itself):
 
 ```bash
 update
@@ -93,4 +95,6 @@ What this means in practice:
   `SECRETS_DEPLOY_KEY`).
 
 If you're not me, the config won't evaluate as is: remove the `secrets` input
-and the `age.secrets` declarations, or point them at your own.
+and the `age.secrets` declarations, or point them at your own. Tsukuba is the
+exception: it uses no secrets, because it updates itself from this public
+repository.
