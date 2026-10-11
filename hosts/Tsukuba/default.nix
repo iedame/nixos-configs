@@ -104,7 +104,7 @@
   services.tailscale.enable = true;
   custom.ssh-server.enable = true;
 
-  # Updates itself from the public repo: every day (or at the next start,
+  # Updates itself from the public repo: once a week (or at the next start,
   # if it was off) it builds what master describes and makes it the default
   # for the next boot, so nothing changes under a running session. The
   # previous systems stay in the boot menu.
@@ -112,7 +112,7 @@
     enable = true;
     flake = "github:iedame/nixos-configs#Tsukuba";
     operation = "boot";
-    dates = "daily";
+    dates = "weekly";
     randomizedDelaySec = "30min";
   };
 

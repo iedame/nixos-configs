@@ -6,7 +6,7 @@ remotely.
 
 ## How it's kept up to date
 
-Nobody runs `update` here. Every day (or at the next start, if it was off)
+Nobody runs `update` here. Once a week (or at the next start, if it was off)
 `system.autoUpgrade` builds `github:iedame/nixos-configs#Tsukuba` from
 `master` and makes it the default for the next boot, so nothing changes under
 a running session. A change reaches the laptop by being merged; CI builds
