@@ -140,12 +140,12 @@ jobs:
             echo "The base branch has no ${ATTR}; skipping."
             exit 0
           fi
-          nix build "${BASE}#${ATTR}" --out-link old-result --fallback
+          nix build "${BASE}#${ATTR}" --out-link old-result
 
       - name: Build ${{ matrix.host }}
         env:
           ATTR: ${{ matrix.attr }}
-        run: nix build ".#${ATTR}" --out-link result --fallback --print-build-logs
+        run: nix build ".#${ATTR}" --out-link result --print-build-logs
 
       # Uploads the few packages that have to be compiled, so the next run and
       # the hosts themselves download them instead. The bucket is public: only
