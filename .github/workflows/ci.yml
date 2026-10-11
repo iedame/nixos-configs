@@ -74,6 +74,9 @@ jobs:
           - host: Aurora
             os: ubuntu-latest
             attr: nixosConfigurations.Aurora.config.system.build.toplevel
+          - host: Tsukuba
+            os: ubuntu-latest
+            attr: nixosConfigurations.Tsukuba.config.system.build.toplevel
           - host: Kawagoe
             os: macos-latest
             attr: darwinConfigurations.Kawagoe.system
@@ -131,7 +134,13 @@ jobs:
         env:
           BASE: github:${{ github.repository }}/${{ github.event.pull_request.base.sha }}
           ATTR: ${{ matrix.attr }}
-        run: nix build "${BASE}#${ATTR}" --out-link old-result --fallback
+        run: |
+          # A host added by this pull request has nothing to compare with
+          if ! nix eval --raw "${BASE}#${ATTR}.drvPath" > /dev/null 2>&1; then
+            echo "The base branch has no ${ATTR}; skipping."
+            exit 0
+          fi
+          nix build "${BASE}#${ATTR}" --out-link old-result --fallback
 
       - name: Build ${{ matrix.host }}
         env:
@@ -209,9 +218,13 @@ jobs:
           {
             echo "### ${HOST}"
             echo ""
-            echo '```'
-            nix run --inputs-from . nixpkgs#nvd -- --color never diff ./old-result ./result
-            echo '```'
+            if [ -e ./old-result ]; then
+              echo '```'
+              nix run --inputs-from . nixpkgs#nvd -- --color never diff ./old-result ./result
+              echo '```'
+            else
+              echo "New host: the base branch has no system to compare with."
+            fi
           } > "diff-${HOST}.md"
           cat "diff-${HOST}.md" >> "$GITHUB_STEP_SUMMARY"
 
@@ -308,7 +321,7 @@ jobs:
           path: diff-${{ matrix.host }}.md
           retention-days: 7
 
-  # One comment on the pull request with both hosts' diffs, updated in place
+  # One comment on the pull request with every host's diff, updated in place
   # when the PR gets new commits.
   comment:
     name: Comment package diff

@@ -23,6 +23,14 @@
     nix-index-database.url = "github:nix-community/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
 
+    # Declarative disk partitioning, used to install Tsukuba
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Per-model hardware profiles (Tsukuba is a MacBookPro8,1)
+    nixos-hardware.url = "github:NixOS/nixos-hardware";
+    nixos-hardware.inputs.nixpkgs.follows = "nixpkgs";
+
     # Homebrew itself, plus its core/cask taps pinned like any other input
     # (bumped by the weekly flake update)
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
@@ -75,13 +83,20 @@
       );
     in
     {
-      nixosModules.default = {
-        imports = [
-          ./modules/nixos/nix-core.nix
-          ./modules/nixos/locale.nix
-          ./modules/nixos/fonts.nix
-          ./modules/nixos/runescape.nix
-        ];
+      nixosModules = {
+        default = {
+          imports = [
+            ./modules/nixos/nix-core.nix
+            ./modules/nixos/locale.nix
+            ./modules/nixos/fonts.nix
+            ./modules/nixos/plasma.nix
+            ./modules/nixos/ssh-server.nix
+          ];
+        };
+
+        # Sets home-manager options, so only for hosts that use home-manager
+        # as a NixOS module
+        runescape = ./modules/nixos/runescape.nix;
       };
 
       darwinModules.default = {
@@ -121,6 +136,7 @@
         };
         modules = [
           self.nixosModules.default
+          self.nixosModules.runescape
           ./hosts/Aurora
           inputs.agenix.nixosModules.default
           inputs.home-manager.nixosModules.home-manager
@@ -136,6 +152,22 @@
               self.homeModules.default
             ];
           }
+        ];
+      };
+
+      # No agenix and no home-manager here: the laptop updates itself from
+      # the public repo (system.autoUpgrade) and must evaluate without
+      # access to the private `secrets` input.
+      nixosConfigurations.Tsukuba = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit inputs;
+        };
+        modules = [
+          self.nixosModules.default
+          ./hosts/Tsukuba
+          inputs.disko.nixosModules.disko
+          inputs.nixos-hardware.nixosModules.apple-macbook-pro-8-1
         ];
       };
 
