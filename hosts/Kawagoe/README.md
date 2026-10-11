@@ -28,8 +28,16 @@ package diff, then activation). The Mac's hostname is set to `Kawagoe`
   commands against it (e.g. `linkding-manage createsuperuser`). Logs:
   `~/Library/Logs/linkding*.log`. nixpkgs' package is Linux-only for now, so
   `overlays/Kawagoe/linkding.nix` carries a copy with the darwin fix; it can
-  go once that lands in nixpkgs. Aurora runs its own separate instance through
-  NixOS's `services.linkding`.
+  go once that lands in nixpkgs. Its environment file is an agenix secret
+  (`secrets.nix`). The tailnet reaches it at `https://linkding.<tailnet>.ts.net`,
+  a Tailscale Service (`svc:linkding`) that follows linkding if it moves to
+  another host. It is set up by hand, not by this config: define the service
+  and approve this host in the admin console, allow the devices' tags to
+  reach `svc:linkding` in the access rules, and advertise it here once with
+  `sudo tailscale serve --service=svc:linkding --https=443 127.0.0.1:9090`
+  (`tailscale serve status` shows it; Tailscale keeps it across reboots).
+  Aurora's instance (NixOS's `services.linkding`) is switched off while this
+  one is being tried out.
 - **Intel builds**: `custom.nix-core.extraPlatforms` adds `x86_64-darwin`
   (via Rosetta).
 - **Build limits**: `custom.nix-core.build` caps Nix at 2 builds at a time

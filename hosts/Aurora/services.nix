@@ -181,7 +181,9 @@ in
   };
 
   services.linkding = {
-    enable = true;
+    # Off while the copy on Kawagoe is being tried out; the data stays in
+    # /var/lib/linkding
+    enable = false;
     port = 9090;
     address = tailscaleIp;
     environmentFile = config.age.secrets."linkding.env".path;
