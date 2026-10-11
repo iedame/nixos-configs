@@ -49,7 +49,7 @@ jobs:
     timeout-minutes: 180
     env:
       # Store path names (regular expressions, matched up to the version)
-      # that Aurora's job may upload to the public cache. Only packages
+      # that the NixOS hosts' jobs may upload to the public cache. Only packages
       # whose licence allows redistribution: the pull request comment lists
       # what else is built here, with licences, and which of these entries
       # no longer match anything.
@@ -97,13 +97,13 @@ jobs:
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
         with:
-          # The extra substituter is the cache the Aurora job uploads to
+          # The extra substituter is the cache the NixOS jobs upload to
           # (empty, so ignored, until the CACHE_* variables are set)
           nix_conf: |
             keep-outputs = true
             ${{ runner.os == 'Linux' && 'build-dir = /nix/build' || '' }}
-            extra-substituters = ${{ matrix.host == 'Aurora' && vars.CACHE_URL || '' }}
-            extra-trusted-public-keys = ${{ matrix.host == 'Aurora' && vars.CACHE_PUBLIC_KEY || '' }}
+            extra-substituters = ${{ runner.os == 'Linux' && vars.CACHE_URL || '' }}
+            extra-trusted-public-keys = ${{ runner.os == 'Linux' && vars.CACHE_PUBLIC_KEY || '' }}
 
       - name: Load deploy key for the secrets repo
         uses: webfactory/ssh-agent@v0.10.0
@@ -113,7 +113,7 @@ jobs:
       # Fails here, before the long build, if the bucket's credentials don't
       # allow uploads. The file is the marker every binary cache has.
       - name: Check write access to the cache
-        if: matrix.host == 'Aurora' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
+        if: runner.os == 'Linux' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
         env:
           CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
           RCLONE_CONFIG_R2_TYPE: s3
@@ -148,10 +148,10 @@ jobs:
         run: nix build ".#${ATTR}" --out-link result --fallback --print-build-logs
 
       # Uploads the few packages that have to be compiled, so the next run and
-      # Aurora itself download them instead. The bucket is public: only
+      # the hosts themselves download them instead. The bucket is public: only
       # packages named in CACHE_PACKAGES go in.
       - name: Upload compiled packages to the cache
-        if: matrix.host == 'Aurora' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
+        if: runner.os == 'Linux' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
         env:
           CACHE_URL: ${{ vars.CACHE_URL }}
           CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
@@ -233,7 +233,7 @@ jobs:
       # CACHE_PACKAGES covers, what could be added to it and which entries
       # are no longer needed.
       - name: Cache report
-        if: github.event_name == 'pull_request' && matrix.host == 'Aurora'
+        if: github.event_name == 'pull_request' && runner.os == 'Linux'
         env:
           HOST: ${{ matrix.host }}
           CONFIGURATION: nixosConfigurations.${{ matrix.host }}
@@ -299,26 +299,26 @@ jobs:
                     (name in terms ? terms[name] : "-"), (name in incache ? "yes" : "no")
               }' "$work/packages" "$work/table" | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2 | cut -f3-
 
-            sed 's#^/nix/store/[a-z0-9]*-##; s# .*##' "$work/paths" > "$work/names"
-            # shellcheck disable=SC2016
-            unused=$(printf '%s\n' "$CACHE_PACKAGES" | tr -s ' ' '\n' | while read -r entry; do
-              grep -Eq "^(${entry})(-|\$)" "$work/names" || printf ' `%s`' "$entry"
-            done)
-            if [ -n "$unused" ]; then
-              echo ""
-              echo "Entries in \`CACHE_PACKAGES\` that match nothing:$unused"
-            fi
             echo ""
           } > "$work/report.md"
           cat "$work/report.md" >> "diff-${HOST}.md"
           cat "$work/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+          # The CACHE_PACKAGES entries this host doesn't use; the comment job
+          # reports the ones no host uses
+          sed 's#^/nix/store/[a-z0-9]*-##; s# .*##' "$work/paths" > "$work/names"
+          printf '%s\n' "$CACHE_PACKAGES" | tr -s ' ' '\n' | while read -r entry; do
+            grep -Eq "^(${entry})(-|\$)" "$work/names" || echo "$entry"
+          done > "unused-${HOST}.txt"
 
       - name: Upload the diff
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: diff-${{ matrix.host }}
-          path: diff-${{ matrix.host }}.md
+          path: |
+            diff-${{ matrix.host }}.md
+            unused-${{ matrix.host }}.txt
           retention-days: 7
 
   # One comment on the pull request with every host's diff, updated in place
@@ -356,6 +356,17 @@ jobs:
               echo "No diff was produced: the builds failed before finishing."
             fi
             echo ""
+            # Entries of the cache allowlist that every reporting host lists
+            # as unused
+            set -- unused-*.txt
+            if [ -e "$1" ]; then
+              # shellcheck disable=SC2016
+              unused=$(sort "$@" | uniq -c | awk -v hosts="$#" '$1 == hosts { printf " `%s`", $2 }')
+              if [ -n "$unused" ]; then
+                echo "Entries in \`CACHE_PACKAGES\` that match nothing on any host:$unused"
+                echo ""
+              fi
+            fi
             echo "[Workflow run]($RUN_URL)"
           } > body.md
 

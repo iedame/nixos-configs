@@ -12,7 +12,8 @@ let
 
   installed =
     config.environment.systemPackages
-    ++ lib.concatMap (user: user.home.packages) (lib.attrValues config.home-manager.users);
+    # Not every host uses home-manager
+    ++ lib.concatMap (user: user.home.packages) (lib.attrValues (config.home-manager.users or { }));
   byDrv = lib.listToAttrs (
     map (
       package:

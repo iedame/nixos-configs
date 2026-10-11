@@ -9,7 +9,12 @@
 
   # Flakes, unfree, nixpkgs registry pin, weekly GC + store optimisation
   # (modules/nixos/nix-core.nix)
-  custom.nix-core.enable = true;
+  custom.nix-core = {
+    enable = true;
+    # Packages cache.nixos.org doesn't have, built and uploaded by CI, so
+    # this old dual-core doesn't have to compile them
+    ciCache.enable = true;
+  };
 
   # Bootloader. On a Mac, hold Option at power-on to pick the boot entry.
   boot.loader.systemd-boot.enable = true;
