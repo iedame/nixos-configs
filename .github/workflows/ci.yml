@@ -49,16 +49,23 @@ jobs:
     timeout-minutes: 180
     env:
       # Store path names (regular expressions, matched up to the version)
-      # that Aurora's job may upload to the public cache. Open-source
-      # packages only: the pull request comment lists what else is built
-      # here, and which of these entries no longer match anything.
+      # that Aurora's job may upload to the public cache. Only packages
+      # whose licence allows redistribution: the pull request comment lists
+      # what else is built here, with licences, and which of these entries
+      # no longer match anything.
       CACHE_PACKAGES: >-
         [a-z_]+[.]traineddata
         asf-ui
+        egl-gbm
+        egl-wayland
+        egl-wayland2
+        egl-x11
         glibc-locales
+        nvidia-settings
         paperless-ngx
         python3[.][0-9]+-ocrmypdf
         tesseract
+        unrar
         xwayland
     strategy:
       fail-fast: false
@@ -108,7 +115,7 @@ jobs:
           CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
-          RCLONE_CONFIG_R2_ENDPOINT: ${{ vars.CACHE_ENDPOINT }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.CACHE_ENDPOINT }}
           RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_NO_CHECK_BUCKET: true
@@ -133,7 +140,7 @@ jobs:
 
       # Uploads the few packages that have to be compiled, so the next run and
       # Aurora itself download them instead. The bucket is public: only
-      # packages named in CACHE_PACKAGES go in, never the unfree ones.
+      # packages named in CACHE_PACKAGES go in.
       - name: Upload compiled packages to the cache
         if: matrix.host == 'Aurora' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
         env:
@@ -142,7 +149,7 @@ jobs:
           CACHE_SIGNING_KEY: ${{ secrets.CACHE_SIGNING_KEY }}
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
-          RCLONE_CONFIG_R2_ENDPOINT: ${{ vars.CACHE_ENDPOINT }}
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.CACHE_ENDPOINT }}
           RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_NO_CHECK_BUCKET: true
@@ -252,7 +259,7 @@ jobs:
             echo ""
             echo "#### Not on cache.nixos.org"
             echo ""
-            echo "| Package | Size | Licence | In our cache |"
+            echo "| Package | Size | Licence | In cache |"
             echo "|---|---:|---|---|"
             PATTERN="$pattern" LICENCES="$work/licences" awk '
               BEGIN {
@@ -272,10 +279,12 @@ jobs:
                 if (cached) incache[name] = 1
               }
               END {
+                # Cached ones first, then by name
                 for (name in size)
-                  printf "%d\t| %s | %.1f MiB | %s | %s |\n", size[name], name, size[name] / 1048576,
+                  printf "%d\t%s\t| %s | %.1f MiB | %s | %s |\n", !(name in incache), tolower(name),
+                    name, size[name] / 1048576,
                     (name in terms ? terms[name] : "-"), (name in incache ? "yes" : "no")
-              }' "$work/packages" "$work/table" | sort -rn | cut -f2-
+              }' "$work/packages" "$work/table" | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2 | cut -f3-
 
             sed 's#^/nix/store/[a-z0-9]*-##; s# .*##' "$work/paths" > "$work/names"
             # shellcheck disable=SC2016
@@ -286,6 +295,7 @@ jobs:
               echo ""
               echo "Entries in \`CACHE_PACKAGES\` that match nothing:$unused"
             fi
+            echo ""
           } > "$work/report.md"
           cat "$work/report.md" >> "diff-${HOST}.md"
           cat "$work/report.md" >> "$GITHUB_STEP_SUMMARY"
