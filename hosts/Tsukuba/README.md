@@ -48,6 +48,10 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 - **Apps**: Firefox, Chrome, OnlyOffice and VLC come from this config.
   Anything else can be installed from Discover through Flatpak, without
   administrator rights.
+- **No passwords in daily use**: the laptop goes straight to `yuki`'s
+  desktop, and the screen doesn't lock after sleep or a closed lid, so
+  anyone who opens it is in. KWallet is disabled so it doesn't ask for a
+  password of its own; browsers keep saved passwords in their own store.
 - **Access**: SSH is reachable only over Tailscale, with my key, as `haoji`.
 - **Passwords** are set on the machine with `passwd` and are not in this
   repository.

@@ -44,6 +44,27 @@
   # Same layout on the text console
   console.useXkbConfig = true;
 
+  # Straight to the desktop at power-on, no password. KWallet is unlocked by
+  # the login password, so with automatic login it would ask for one itself
+  # the first time a browser stores something; it's switched off instead.
+  services.displayManager.autoLogin = {
+    enable = true;
+    user = "yuki";
+  };
+  environment.etc."xdg/kwalletrc".text = ''
+    [Wallet]
+    Enabled=false
+  '';
+
+  # No password after sleep or a closed lid either: this laptop stays at
+  # home. These are Plasma's defaults for every user; a setting changed in
+  # System Settings takes precedence.
+  environment.etc."xdg/kscreenlockerrc".text = ''
+    [Daemon]
+    Autolock=false
+    LockOnResume=false
+  '';
+
   # Enable CUPS to print documents.
   services.printing.enable = true;
 
