@@ -47,6 +47,26 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ${{ matrix.os }}
     timeout-minutes: 180
+    env:
+      # Store path names (regular expressions, matched up to the version)
+      # that Aurora's job may upload to the public cache. Only packages
+      # whose licence allows redistribution: the pull request comment lists
+      # what else is built here, with licences, and which of these entries
+      # no longer match anything.
+      CACHE_PACKAGES: >-
+        [a-z_]+[.]traineddata
+        asf-ui
+        egl-gbm
+        egl-wayland
+        egl-wayland2
+        egl-x11
+        glibc-locales
+        nvidia-settings
+        paperless-ngx
+        python3[.][0-9]+-ocrmypdf
+        tesseract
+        unrar
+        xwayland
     strategy:
       fail-fast: false
       matrix:
@@ -74,14 +94,35 @@ jobs:
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
         with:
+          # The extra substituter is the cache the Aurora job uploads to
+          # (empty, so ignored, until the CACHE_* variables are set)
           nix_conf: |
             keep-outputs = true
             ${{ runner.os == 'Linux' && 'build-dir = /nix/build' || '' }}
+            extra-substituters = ${{ matrix.host == 'Aurora' && vars.CACHE_URL || '' }}
+            extra-trusted-public-keys = ${{ matrix.host == 'Aurora' && vars.CACHE_PUBLIC_KEY || '' }}
 
       - name: Load deploy key for the secrets repo
         uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.SECRETS_DEPLOY_KEY }}
+
+      # Fails here, before the long build, if the bucket's credentials don't
+      # allow uploads. The file is the marker every binary cache has.
+      - name: Check write access to the cache
+        if: matrix.host == 'Aurora' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
+        env:
+          CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.CACHE_ENDPOINT }}
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: true
+        run: |
+          echo "StoreDir: /nix/store" > "$RUNNER_TEMP/nix-cache-info"
+          nix run --inputs-from . nixpkgs#rclone -- copyto \
+            "$RUNNER_TEMP/nix-cache-info" "r2:${CACHE_BUCKET}/nix-cache-info"
 
       # Built first: the new system shares most of its store paths with it,
       # so the second build only fetches and builds what changed.
@@ -97,6 +138,69 @@ jobs:
           ATTR: ${{ matrix.attr }}
         run: nix build ".#${ATTR}" --out-link result --fallback --print-build-logs
 
+      # Uploads the few packages that have to be compiled, so the next run and
+      # Aurora itself download them instead. The bucket is public: only
+      # packages named in CACHE_PACKAGES go in.
+      - name: Upload compiled packages to the cache
+        if: matrix.host == 'Aurora' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
+        env:
+          CACHE_URL: ${{ vars.CACHE_URL }}
+          CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
+          CACHE_SIGNING_KEY: ${{ secrets.CACHE_SIGNING_KEY }}
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.CACHE_ENDPOINT }}
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: true
+        run: |
+          work="$RUNNER_TEMP/cache"
+          mkdir -p "$work"
+          pattern="^($(printf '%s' "$CACHE_PACKAGES" | tr -s ' ' '|'))(-|\$)"
+
+          # Paths of the new system that cache.nixos.org doesn't have, that
+          # match the list and aren't in the bucket yet
+          nix path-info --recursive --sigs ./result | PATTERN="$pattern" awk '
+            /cache\.nixos\.org-1:/ { next }
+            {
+              name = $1
+              sub(/^\/nix\/store\/[a-z0-9]+-/, "", name)
+              if (name ~ ENVIRON["PATTERN"]) print $1
+            }' > "$work/candidates"
+          while read -r path; do
+            hash="${path#/nix/store/}"
+            hash="${hash%%-*}"
+            curl --fail --silent --head --output /dev/null "${CACHE_URL%/}/${hash}.narinfo" \
+              || echo "$path"
+          done < "$work/candidates" > "$work/missing"
+
+          echo "$(wc -l < "$work/candidates") matching, $(wc -l < "$work/missing") to upload"
+          if [ ! -s "$work/missing" ]; then
+            exit 0
+          fi
+          cat "$work/missing"
+
+          # A binary cache only accepts a path together with its dependencies,
+          # so the whole closure goes to a local cache first and only the
+          # wanted paths are uploaded from there
+          (umask 077 && printf '%s\n' "$CACHE_SIGNING_KEY" > "$work/key")
+          xargs nix copy \
+            --to "file://$work/store?secret-key=$work/key&compression=zstd" \
+            < "$work/missing"
+          rm "$work/key"
+
+          {
+            echo nix-cache-info
+            while read -r path; do
+              hash="${path#/nix/store/}"
+              hash="${hash%%-*}"
+              sed -n 's/^URL: //p' "$work/store/${hash}.narinfo"
+              echo "${hash}.narinfo"
+            done < "$work/missing"
+          } > "$work/files"
+          nix run --inputs-from . nixpkgs#rclone -- copy --no-traverse \
+            --files-from "$work/files" "$work/store" "r2:${CACHE_BUCKET}"
+
       - name: Package diff
         if: github.event_name == 'pull_request'
         env:
@@ -110,6 +214,91 @@ jobs:
             echo '```'
           } > "diff-${HOST}.md"
           cat "diff-${HOST}.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # Added to the comment: the packages cache.nixos.org doesn't provide,
+      # with their licence (scripts/package-licences.nix), so it's clear what
+      # CACHE_PACKAGES covers, what could be added to it and which entries
+      # are no longer needed.
+      - name: Cache report
+        if: github.event_name == 'pull_request' && matrix.host == 'Aurora'
+        env:
+          HOST: ${{ matrix.host }}
+          CONFIGURATION: nixosConfigurations.${{ matrix.host }}
+        run: |
+          work="$RUNNER_TEMP/report"
+          mkdir -p "$work"
+          jq() { nix run --inputs-from . nixpkgs#jq -- "$@"; }
+          pattern="^($(printf '%s' "$CACHE_PACKAGES" | tr -s ' ' '|'))(-|\$)"
+
+          # Every path of the new system that didn't come from
+          # cache.nixos.org: "path size derivation"
+          nix path-info --recursive --sigs --size ./result \
+            | awk '!/cache\.nixos\.org-1:/ { print $1, $2 }' > "$work/paths"
+          cut -d' ' -f1 "$work/paths" | xargs nix-store --query --deriver > "$work/derivers"
+          paste -d' ' "$work/paths" "$work/derivers" > "$work/table"
+
+          # Of their derivations, the real packages: generated files and
+          # wrapper scripts have no pname or are marked as local-only builds.
+          # "derivation name pname"
+          # shellcheck disable=SC2016
+          grep -o '[^ ]*\.drv$' "$work/table" | sort -u | xargs nix derivation show \
+            | jq -r '
+              (.derivations // .) | to_entries[]
+              | ((.value.structuredAttrs // {}) + (.value.env // {})) as $e
+              | select(($e.pname // "") != "")
+              | select(($e.preferLocalBuild // "") | tostring | test("^(1|true)$") | not)
+              | "\(.key | sub(".*/"; "")) \(.value.name) \($e.pname)"' > "$work/packages"
+
+          # Their licences: "derivation<TAB>licences"
+          list=$(awk '{ printf "{ drv = \"%s\"; pname = \"%s\"; } ", $1, $3 }' "$work/packages")
+          nix eval --json ".#${CONFIGURATION}" \
+            --apply "($(cat .github/scripts/package-licences.nix)) [ $list ]" \
+            | jq -r 'to_entries[] | "\(.key)\t\(.value)"' > "$work/licences"
+
+          {
+            echo ""
+            echo "#### Not on cache.nixos.org"
+            echo ""
+            echo "| Package | Size | Licence | In cache |"
+            echo "|---|---:|---|---|"
+            PATTERN="$pattern" LICENCES="$work/licences" awk '
+              BEGIN {
+                while ((getline line < ENVIRON["LICENCES"]) > 0) {
+                  split(line, field, "\t")
+                  licence[field[1]] = field[2]
+                }
+              }
+              NR == FNR { package[$1] = $2; next }
+              {
+                name = $1; sub(/^\/nix\/store\/[a-z0-9]+-/, "", name)
+                drv = $3; sub(/.*\//, "", drv)
+                cached = (name ~ ENVIRON["PATTERN"])
+                if (drv in package) { name = package[drv]; terms[name] = licence[drv] }
+                else if (!cached) next
+                size[name] += $2
+                if (cached) incache[name] = 1
+              }
+              END {
+                # Cached ones first, then by name
+                for (name in size)
+                  printf "%d\t%s\t| %s | %.1f MiB | %s | %s |\n", !(name in incache), tolower(name),
+                    name, size[name] / 1048576,
+                    (name in terms ? terms[name] : "-"), (name in incache ? "yes" : "no")
+              }' "$work/packages" "$work/table" | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2 | cut -f3-
+
+            sed 's#^/nix/store/[a-z0-9]*-##; s# .*##' "$work/paths" > "$work/names"
+            # shellcheck disable=SC2016
+            unused=$(printf '%s\n' "$CACHE_PACKAGES" | tr -s ' ' '\n' | while read -r entry; do
+              grep -Eq "^(${entry})(-|\$)" "$work/names" || printf ' `%s`' "$entry"
+            done)
+            if [ -n "$unused" ]; then
+              echo ""
+              echo "Entries in \`CACHE_PACKAGES\` that match nothing:$unused"
+            fi
+            echo ""
+          } > "$work/report.md"
+          cat "$work/report.md" >> "diff-${HOST}.md"
+          cat "$work/report.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the diff
         if: github.event_name == 'pull_request'
