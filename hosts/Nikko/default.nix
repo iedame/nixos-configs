@@ -4,13 +4,6 @@
   # Everything about the machine itself is in modules/nixos/oracle-micro.nix
   networking.hostName = "Nikko"; # Must match nixosConfigurations.Nikko in flake.nix
 
-  # For the conversion from Ubuntu only (see ../Narita/README.md); both are
-  # removed once the host is up as NixOS. The scripted initrd is what moves
-  # the old system aside on first boot, and public SSH is the way in if
-  # Tailscale doesn't come back.
-  boot.initrd.systemd.enable = false;
-  custom.ssh-server.openToInternet = true;
-
   # Tailscale exit node: other devices on the tailnet can route their
   # internet traffic through this server. Needs packet forwarding, which
   # "server" turns on; the flag makes Tailscale offer the node (it still
@@ -30,6 +23,15 @@
     };
   };
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 3001 ];
+
+  # The same Uptime Kuma as a Tailscale Service: its own name and HTTPS
+  # certificate on the tailnet, https://kuma-nikko.<tailnet>.ts.net. The
+  # service has to be defined in the admin console (tcp:443), this host
+  # approved for it, and access to svc:kuma-nikko granted in the rules.
+  services.tailscale.serve = {
+    enable = true;
+    services."kuma-nikko".endpoints."tcp:443" = "http://127.0.0.1:3001";
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
