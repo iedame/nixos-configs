@@ -63,13 +63,6 @@
     "console=ttyS0"
   ];
 
-  # Only for the conversion from Ubuntu: it relies on NixOS moving the old
-  # system out of the way on first boot (/etc/NIXOS_LUSTRATE), which only
-  # the scripted initrd implements. That initrd is deprecated and about to
-  # be removed from nixpkgs, so delete this line once every host here has
-  # been converted.
-  boot.initrd.systemd.enable = false;
-
   # Oracle's time server, reachable from every instance
   networking.timeServers = [ "169.254.169.254" ];
 
@@ -127,7 +120,10 @@
   # Lets haoji hand the daemon a system that is signed by the cache's key
   nix.settings.trusted-users = [ "haoji" ];
 
-  # SSH and Tailscale (modules/nixos/ssh-server.nix)
+  # SSH and Tailscale (modules/nixos/ssh-server.nix). A host being
+  # converted from Ubuntu sets custom.ssh-server.openToInternet until
+  # Tailscale has come back, and boot.initrd.systemd.enable = false for its
+  # first boot (see hosts/Narita/README.md).
   services.tailscale.enable = true;
   custom.ssh-server.enable = true;
 }
