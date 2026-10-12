@@ -21,7 +21,7 @@ on any machine, including the Mac:
 
 ```bash
 system=$(nix eval --raw ~/.config/nixos-configs#nixosConfigurations.Narita.config.system.build.toplevel.outPath)
-ssh narita "sudo nix-env -p /nix/var/nix/profiles/system --set $system && sudo $system/bin/switch-to-configuration switch"
+ssh narita "sudo nix-store --realise $system > /dev/null && sudo nix-env -p /nix/var/nix/profiles/system --set $system && sudo $system/bin/switch-to-configuration switch"
 ```
 
 The first line only computes the system's store path (the same one CI
