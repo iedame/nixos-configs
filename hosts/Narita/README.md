@@ -13,11 +13,29 @@ the name and what this host runs.
 ## How it's updated
 
 It can't build or even evaluate its own system: that needs more memory than
-it has. Instead CI builds the system on every pull request and uploads all
-of it to the cache (`cache_all` in `.github/workflows/ci.yml`), and the
-host downloads and activates the result, which needs the cache's read
-token on the host (see "Binary cache" in the top-level README). From a
-checkout of the merged `master`, on any machine, including the Mac:
+it has. Instead CI builds the system and uploads all of it to the cache
+(`cache_all` in `.github/workflows/ci.yml`), and the host downloads and
+activates the result, which needs the cache's read token on the host (see
+"Binary cache" in the top-level README).
+
+That happens by itself after every merge (`custom.self-deploy`,
+`modules/nixos/self-deploy.nix`): CI's run on `master` publishes the store
+path of the new system, and a timer on the host looks for it every 15
+minutes. So a merged change is live about 20 minutes later, and a failed
+update shows up in the health reports below.
+
+```bash
+ssh narita 'systemctl list-timers self-deploy.timer --no-pager; journalctl -u self-deploy -n 5 --no-pager -o cat'   # when it last looked
+ssh narita sudo systemctl start self-deploy       # look now
+ssh narita sudo systemctl stop self-deploy.timer  # hold the current system
+```
+
+A kernel update only takes effect after a reboot, which nothing does
+automatically.
+
+To deploy by hand instead, for instance a branch CI has built but that
+isn't merged (stop the timer first, or it brings back `master`'s system),
+from a checkout of that commit on any machine, including the Mac:
 
 ```bash
 system=$(nix eval --raw ~/.config/nixos-configs#nixosConfigurations.Narita.config.system.build.toplevel.outPath)

@@ -35,7 +35,7 @@ on what they need, e.g. `custom.nix-core.enable = true;`.
 ## Usage
 
 Rebuild the current machine (Aurora and Kawagoe define this alias, which runs
-`nh`; Tsukuba updates itself):
+`nh`; Tsukuba updates itself weekly, and Narita and Nikko after every merge):
 
 ```bash
 update

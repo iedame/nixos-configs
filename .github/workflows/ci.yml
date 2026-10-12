@@ -1,10 +1,17 @@
 name: CI
 
 # Checks every pull request before it is merged, including the bot's weekly
-# flake-update PRs: does the flake still evaluate and stay formatted, do both
+# flake-update PRs: does the flake still evaluate and stay formatted, do the
 # hosts still build, and which packages change.
+#
+# Runs again on master after a merge, which is what deploys Narita and
+# Nikko: their systems are built and uploaded once more from the merged
+# tree, and then published for the hosts to pick up (the last step of the
+# build job).
 on:
   pull_request:
+    branches: [master]
+  push:
     branches: [master]
   workflow_dispatch:
 
@@ -252,6 +259,27 @@ jobs:
           } > "$work/files"
           nix run --inputs-from . nixpkgs#rclone -- copy --no-traverse \
             --files-from "$work/files" "$work/store" "r2:${CACHE_BUCKET}"
+
+      # After a merge: tells a cache_all host which system to run, by
+      # writing the store path to deploy/<host> in the bucket. The host looks
+      # there every few minutes and activates what it finds
+      # (modules/nixos/self-deploy.nix). Comes after the upload, so the host
+      # never sees a system it can't download yet.
+      - name: Publish the system for the host to deploy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.cache_all && vars.CACHE_BUCKET != ''
+        env:
+          HOST: ${{ matrix.host }}
+          CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.CACHE_ENDPOINT }}
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: true
+        run: |
+          readlink result | nix run --inputs-from . nixpkgs#rclone -- \
+            rcat "r2:${CACHE_BUCKET}/deploy/${HOST}"
+          echo "Published for ${HOST}: \`$(readlink result)\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Package diff
         if: github.event_name == 'pull_request'

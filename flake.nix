@@ -106,6 +106,7 @@
             ./modules/nixos/fonts.nix
             ./modules/nixos/heartbeat.nix
             ./modules/nixos/plasma.nix
+            ./modules/nixos/self-deploy.nix
             ./modules/nixos/ssh-server.nix
             ./modules/nixos/tailscale-services.nix
             ./modules/nixos/uptime-kuma-backup.nix
