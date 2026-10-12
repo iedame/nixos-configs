@@ -190,6 +190,7 @@
 
       # Oracle Cloud Always Free micro instances
       nixosConfigurations.Narita = oracleMicro ./hosts/Narita;
+      nixosConfigurations.Nikko = oracleMicro ./hosts/Nikko;
 
       darwinConfigurations.Kawagoe = inputs.nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
