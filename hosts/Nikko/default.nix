@@ -4,13 +4,6 @@
   # Everything about the machine itself is in modules/nixos/oracle-micro.nix
   networking.hostName = "Nikko"; # Must match nixosConfigurations.Nikko in flake.nix
 
-  # For the conversion from Ubuntu only (see ../Narita/README.md); both are
-  # removed once the host is up as NixOS. The scripted initrd is what moves
-  # the old system aside on first boot, and public SSH is the way in if
-  # Tailscale doesn't come back.
-  boot.initrd.systemd.enable = false;
-  custom.ssh-server.openToInternet = true;
-
   # Tailscale exit node: other devices on the tailnet can route their
   # internet traffic through this server. Needs packet forwarding, which
   # "server" turns on; the flag makes Tailscale offer the node (it still
