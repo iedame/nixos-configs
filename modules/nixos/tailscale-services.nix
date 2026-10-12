@@ -41,32 +41,66 @@ in
     );
   };
 
-  config.systemd.services = lib.mapAttrs' (
-    name: service:
-    let
-      serve = "tailscale serve --service=svc:${name} --https=${toString service.port} ${lib.escapeShellArg service.target}";
-    in
-    lib.nameValuePair "tailscale-service-${name}" {
-      description = "Publish ${name} as a Tailscale Service";
-      wantedBy = [ "multi-user.target" ];
-      wants = [ "tailscaled.service" ];
-      after = [ "tailscaled.service" ];
-      path = [ config.services.tailscale.package ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        # tailscaled may not be ready to take it right after boot
-        Restart = "on-failure";
-        RestartSec = "30s";
-      };
-      # Tailscale remembers the setting, so this is normally a no-op; if
-      # the port is taken by an older, different setting, start over
-      script = ''
-        ${serve} || {
-          tailscale serve clear svc:${name}
-          ${serve}
-        }
-      '';
-    }
-  ) cfg;
+  # One unit applies the whole set: it publishes every service declared
+  # above and withdraws the ones that were declared before and no longer
+  # are. Tailscale keeps serve settings in its own state, so without that
+  # second part a service removed from the configuration would stay
+  # published. The unit remembers what it published in its state directory
+  # and only ever withdraws those, never a service set up by hand.
+  config.systemd.services.tailscale-services = lib.mkIf config.services.tailscale.enable {
+    description = "Publish the declared Tailscale Services";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" ];
+    path = [ config.services.tailscale.package ];
+    # With nothing declared there is only work to do if something was
+    # published earlier
+    unitConfig.ConditionPathExists = lib.mkIf (cfg == { }) "/var/lib/tailscale-services/managed";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      StateDirectory = "tailscale-services";
+      # tailscaled may not be ready to take it right after boot
+      Restart = "on-failure";
+      RestartSec = "30s";
+    };
+    script = ''
+      managed="$STATE_DIRECTORY/managed"
+      wanted=${lib.escapeShellArg (lib.concatStringsSep " " (lib.attrNames cfg))}
+
+      if [ -f "$managed" ]; then
+        while read -r name; do
+          case " $wanted " in
+            *" $name "*) ;;
+            *)
+              echo "withdrawing svc:$name"
+              tailscale serve clear "svc:$name" || echo "svc:$name was already gone"
+              ;;
+          esac
+        done < "$managed"
+      fi
+
+      ${lib.concatStrings (
+        lib.mapAttrsToList (
+          name: service:
+          let
+            serve = "tailscale serve --service=svc:${name} --https=${toString service.port} ${lib.escapeShellArg service.target}";
+          in
+          ''
+            # Normally a no-op, since Tailscale remembers the setting; if the
+            # port is taken by an older, different one, start over
+            ${serve} || {
+              tailscale serve clear svc:${name}
+              ${serve}
+            }
+          ''
+        ) cfg
+      )}
+      if [ -n "$wanted" ]; then
+        printf '%s\n' $wanted > "$managed"
+      else
+        rm -f "$managed"
+      fi
+    '';
+  };
 }
