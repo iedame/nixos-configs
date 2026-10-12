@@ -70,11 +70,11 @@ hosts download from it with `custom.nix-core.ciCache.enable`
 
 The bucket is read through R2's S3 API, so each host needs a read-only
 token for it (Cloudflare dashboard, R2, "Manage API tokens": Object Read
-only, limited to this bucket), in root's AWS credentials file. On Narita
-and Nikko that file is the agenix secret `shared/cache-credentials.age`
-(see [Secrets](#secrets)), so changing the token is an edit there. It is
-placed by hand on the other hosts, and once on a newly installed Narita or
-Nikko, which needs it to download its first system:
+only, limited to this bucket), in root's AWS credentials file. On Aurora,
+Narita and Nikko that file is an agenix secret (`cache-credentials.age` in
+`aurora/` and `shared/`; see [Secrets](#secrets)), so changing the token is
+an edit there. It is placed by hand on Tsukuba, and once on a newly
+installed Narita or Nikko, which needs it to download its first system:
 
 ```bash
 ssh -t <host> 'sudo install -d -m 700 /root/.aws && sudo sh -c "umask 077; cat > /root/.aws/credentials"'
@@ -88,9 +88,9 @@ aws_access_key_id = <access key ID>
 aws_secret_access_key = <secret access key>
 ```
 
-To replace the token on Narita and Nikko, put the new one in the secret
-and let them deploy it before revoking the old one in Cloudflare: they
-download the system that carries the new token with the old one.
+To replace the token, put the new one in both secrets and let Narita and
+Nikko deploy it before revoking the old one in Cloudflare: they download
+the system that carries the new token with the old one.
 
 A host without the file still works: Nix prints a warning and uses
 `cache.nixos.org` alone, which means compiling the missing packages itself

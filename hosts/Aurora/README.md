@@ -46,17 +46,12 @@ is often off, so that interval is set to weeks on its monitor: silence is
 normal, and the alert that matters is a failed unit.
 
 The monitor's push URL contains the tailnet's name and a token, so it is
-not in this repository. It lives in `/etc/heartbeat-url` on the machine and
-has to be put back by hand after a reinstall. This prompts for it, stores
-it readable by root only, and sends a first report:
-
-```bash
-ssh -t aurora 'read -rsp "Push URL: " u && echo && printf "%s\n" "$u" | sudo install -m 600 /dev/stdin /etc/heartbeat-url && sudo systemctl start heartbeat.service && journalctl -u heartbeat.service -n 3 --no-pager -o cat'
-```
+not in this repository: it is the agenix secret `aurora/heartbeat-url.age`
+(see below).
 
 ## Secrets
 
-Three secrets are managed with agenix (`secrets.nix`; the encrypted files are
+Five secrets are managed with agenix (`secrets.nix`; the encrypted files are
 in `aurora/` of the private secrets repo), decrypted at activation into
 `/run/agenix/`:
 
@@ -65,6 +60,8 @@ in `aurora/` of the private secrets repo), decrypted at activation into
 | `cloudflare-dns.env` | ACME DNS challenge for the wildcard certificate |
 | `vaultwarden.env` | Vaultwarden |
 | `linkding.env` | linkding |
+| `heartbeat-url` | The health reports above |
+| `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
 
 To confirm the services read them:
 

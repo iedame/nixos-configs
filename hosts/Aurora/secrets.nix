@@ -6,8 +6,9 @@
 {
   # The encrypted files live in the private `secrets` flake input (see
   # flake.nix). agenix decrypts them at activation with the SSH host key
-  # (ssh.nix) into /run/agenix/<name>. All three are read by systemd as root
-  # (EnvironmentFile), so agenix's default root-only 0400 permissions work.
+  # (ssh.nix) into /run/agenix/<name>. All are read as root (systemd's
+  # EnvironmentFile, the heartbeat, Nix), so agenix's default root-only 0400
+  # permissions work.
   age.identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
   age.secrets = {
@@ -15,6 +16,14 @@
     "cloudflare-dns.env".file = "${inputs.secrets}/aurora/cloudflare-dns.env.age";
     "vaultwarden.env".file = "${inputs.secrets}/aurora/vaultwarden.env.age";
     "linkding.env".file = "${inputs.secrets}/aurora/linkding.env.age";
+    # Push URL of this host's monitor in Uptime Kuma (custom.heartbeat)
+    "heartbeat-url".file = "${inputs.secrets}/aurora/heartbeat-url.age";
+    # Read-only R2 token for the binary cache, linked to where Nix looks
+    # for it (see "Binary cache" in the top-level README)
+    "cache-credentials" = {
+      file = "${inputs.secrets}/aurora/cache-credentials.age";
+      path = "/root/.aws/credentials";
+    };
   };
 
   # agenix CLI, for editing the secrets (in a clone of the private repo)
