@@ -7,94 +7,154 @@
 let
   secret = name: config.age.secrets.${name}.path;
 
-  # What the two jobs share. They continue the repositories Pika Backup
-  # created on a Hetzner Storage Box (one sub-account each), so each keeps
-  # Pika's archive prefix: old and new archives then fall under the same
-  # retention rule.
-  job = name: prefix: {
-    # "borg-<name>" is a host alias in the SSH configuration below
-    repo = "ssh://borg-${name}/./backups";
-    archiveBaseName = prefix;
-    doInit = false;
-    encryption = {
-      mode = "repokey-blake2";
-      passCommand = "cat ${secret "borg-${name}-passphrase"}";
+  # What the jobs share. Each repository is its own sub-account of a
+  # Hetzner Storage Box, and `repo` names it: the host alias
+  # "borg-<repo>" in the SSH configuration below and the secret
+  # "borg-<repo>-passphrase". Several jobs can share a repository; their
+  # archives are told apart, and pruned separately, by `prefix`.
+  job =
+    { repo, prefix }:
+    {
+      repo = "ssh://borg-${repo}/./backups";
+      archiveBaseName = prefix;
+      doInit = false;
+      encryption = {
+        mode = "repokey-blake2";
+        passCommand = "cat ${secret "borg-${repo}-passphrase"}";
+      };
+      # Jobs sharing a repository wait for each other instead of failing
+      extraArgs = [ "--lock-wait=3600" ];
+      # An SSH configuration kept as a secret, because it holds the storage
+      # box's account names: an alias "borg-<repo>" for each account, port
+      # 23 and the key to use. That key is only used for backups; its public
+      # half, which every account here has to accept, is:
+      #   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMrQYOl914CxDHjaiYUsx9+uwYhzVBmyTMnFkZxy9YkN borg-backup@Aurora
+      environment.BORG_RSH = "ssh -F ${secret "borg-ssh-config"}";
+      compression = "auto,zstd";
+      extraCreateArgs = [
+        "--exclude-caches"
+        "--stats"
+      ];
+      # A file that changes while it is read is a warning, not a failed
+      # backup
+      failOnWarnings = false;
+      startAt = "daily";
+      # This machine is often off at the scheduled time: run when it is next
+      # on instead
+      persistentTimer = true;
+      prune.keep = {
+        within = "1d";
+        daily = 7;
+        weekly = 4;
+        monthly = 6;
+      };
     };
-    # An SSH configuration kept as a secret, because it holds the storage
-    # box's account names: an alias "borg-<name>" for each account, port
-    # 23 and the key to use. That key is only used for backups; its public
-    # half, which every account here has to accept, is:
-    #   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMrQYOl914CxDHjaiYUsx9+uwYhzVBmyTMnFkZxy9YkN borg-backup@Aurora
-    environment.BORG_RSH = "ssh -F ${secret "borg-ssh-config"}";
-    compression = "auto,zstd";
-    extraCreateArgs = [
-      "--exclude-caches"
-      "--stats"
-    ];
-    # A file that changes while it is read is a warning, not a failed
-    # backup
-    failOnWarnings = false;
-    # The pool not being mounted must not look like "everything was
-    # deleted"
-    preHook = ''
-      ${pkgs.util-linux}/bin/mountpoint --quiet /backup-pool/photos
-      ${pkgs.util-linux}/bin/mountpoint --quiet /backup-pool/documents
-    '';
-    startAt = "daily";
-    # This machine is often off at the scheduled time: run when it is next
-    # on instead
-    persistentTimer = true;
-    prune.keep = {
-      within = "1d";
-      daily = 7;
-      weekly = 4;
-      monthly = 6;
-    };
-  };
+
+  # For the jobs that read from the ZFS pool: it not being mounted must not
+  # look like "everything was deleted"
+  poolMounted = ''
+    ${pkgs.util-linux}/bin/mountpoint --quiet /backup-pool/photos
+    ${pkgs.util-linux}/bin/mountpoint --quiet /backup-pool/documents
+  '';
 in
 {
   # Daily, encrypted, off-site backups with Borg. A failed run leaves a
   # failed unit, which the heartbeat (default.nix) reports. See README.md
   # here for listing and restoring.
   services.borgbackup.jobs = {
-    # The Immich photo library
-    immich = job "immich" "14d8a7" // {
-      paths = [ "/backup-pool/photos/immich" ];
-    };
+    # The Immich photo library. This repository and the next continue
+    # the ones Pika Backup created, so they keep Pika's archive prefixes:
+    # old and new archives then fall under the same retention rule.
+    immich =
+      job {
+        repo = "immich";
+        prefix = "14d8a7";
+      }
+      // {
+        paths = [ "/backup-pool/photos/immich" ];
+        preHook = poolMounted;
+      };
 
     # Documents and the home folders worth keeping
-    home = job "home" "08333e" // {
-      paths = [
-        "/backup-pool/documents/haoji/onedrive"
-      ]
-      ++ map (folder: "/home/haoji/${folder}") [
-        "Containers"
-        "Desktop"
-        "Documents"
-        "Music"
-        "Pictures"
-        "Scripts"
-        "Videos"
-      ];
-      exclude = [
-        "*/.cache"
-        "*/.Trash-*"
-      ];
-    };
+    home =
+      job {
+        repo = "home";
+        prefix = "08333e";
+      }
+      // {
+        preHook = poolMounted;
+        paths = [
+          "/backup-pool/documents/haoji/onedrive"
+        ]
+        ++ map (folder: "/home/haoji/${folder}") [
+          "Containers"
+          "Desktop"
+          "Documents"
+          "Music"
+          "Pictures"
+          "Scripts"
+          "Videos"
+        ];
+        exclude = [
+          "*/.cache"
+          "*/.Trash-*"
+        ];
+      };
+
+    # The small services share the "services" repository, one job each.
+    #
+    # Vaultwarden: the consistent copy of its database, attachments and
+    # keys that its own backup job makes every evening (services.nix,
+    # backupDir)
+    vaultwarden =
+      job {
+        repo = "services";
+        prefix = "vaultwarden";
+      }
+      // {
+        paths = [ config.services.vaultwarden.backupDir ];
+        # The first job of a new repository creates it
+        doInit = true;
+      };
   };
 
   # Once a month, a consistency check of each repository (done on the
   # storage box itself, so nothing is downloaded) and of its newest
   # archive's index. It doesn't read the backed-up data back: that would
   # mean downloading all of it.
+  #
+  # One file is read back, though: Immich's database. Immich writes dumps
+  # of it into its media folder, which is how the database gets into the
+  # backup at all, and unlike a photo a damaged dump can't be noticed by
+  # looking. The newest dump in the newest archive is downloaded and its
+  # compression verified end to end.
   systemd.services.borgbackup-check = {
     description = "Check the Borg repositories";
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
+    path = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.gzip
+    ];
     serviceConfig.Type = "oneshot";
-    script = lib.concatMapStrings (name: ''
-      /run/current-system/sw/bin/borg-job-${name} check --lock-wait 3600 --last 1
-    '') (lib.attrNames config.services.borgbackup.jobs);
+    script =
+      lib.concatMapStrings (name: ''
+        /run/current-system/sw/bin/borg-job-${name} check --lock-wait 3600 --last 1
+      '') (lib.attrNames config.services.borgbackup.jobs)
+      + ''
+        set -o pipefail
+        borg=/run/current-system/sw/bin/borg-job-immich
+        archive=$($borg list --lock-wait 3600 --last 1 --format '{archive}{NL}')
+        dump=$($borg list --lock-wait 3600 --format '{path}{NL}' "::$archive" backup-pool/photos/immich/backups \
+          | grep '\.sql\.gz$' | sort | tail -n 1 || true)
+        if [ -z "$dump" ]; then
+          echo "archive $archive holds no Immich database dump"
+          exit 1
+        fi
+        $borg extract --lock-wait 3600 --stdout "::$archive" "$dump" | gzip --test
+        echo "Immich database dump intact: $dump in $archive"
+      '';
   };
   systemd.timers.borgbackup-check = {
     description = "Check the Borg repositories monthly";
