@@ -14,10 +14,10 @@ the name and what this host runs.
 
 It can't build or even evaluate its own system: that needs more memory than
 it has. Instead CI builds the system on every pull request and uploads all
-of it to the public cache (`cache_all` in `.github/workflows/ci.yml`; the
-configuration refuses unfree packages for that reason), and the host
-downloads and activates the result. From a checkout of the merged `master`,
-on any machine, including the Mac:
+of it to the cache (`cache_all` in `.github/workflows/ci.yml`), and the
+host downloads and activates the result, which needs the cache's read
+token on the host (see "Binary cache" in the top-level README). From a
+checkout of the merged `master`, on any machine, including the Mac:
 
 ```bash
 system=$(nix eval --raw ~/.config/nixos-configs#nixosConfigurations.Narita.config.system.build.toplevel.outPath)
@@ -77,12 +77,15 @@ On the Ubuntu instance, with `system` set to the store path from above:
    sh <(curl -L https://nixos.org/nix/install) --daemon --yes
    ```
 
-2. Download the system and make it the system profile:
+2. Place the cache's read token in `/root/.aws/credentials` (see "Binary
+   cache" in the top-level README), then download the system and make it
+   the system profile. `cache` is the `s3://` address in
+   `modules/nixos/nix-core.nix`:
 
    ```bash
    nix=/nix/var/nix/profiles/default/bin
-   sudo $nix/nix-store --realise "$system" \
-     --option extra-substituters https://cache.nixkeeper.com \
+   sudo -H $nix/nix-store --realise "$system" \
+     --option extra-substituters "$cache" \
      --option extra-trusted-public-keys "nixos-configs-cache-1:CW5tDg3uwOBmz8C2a29loFeNcqo4sjInPjTgd0zIhOc="
    sudo $nix/nix-env -p /nix/var/nix/profiles/system --set "$system"
    ```

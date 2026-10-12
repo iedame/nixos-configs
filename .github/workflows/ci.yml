@@ -49,10 +49,10 @@ jobs:
     timeout-minutes: 180
     env:
       # Store path names (regular expressions, matched up to the version)
-      # that the NixOS hosts' jobs may upload to the public cache. Only packages
-      # whose licence allows redistribution: the pull request comment lists
-      # what else is built here, with licences, and which of these entries
-      # no longer match anything.
+      # that the NixOS hosts' jobs upload to the cache: what is worth not
+      # compiling again, kept short so the bucket stays small. The pull
+      # request comment lists what else is built here, with licences, and
+      # which of these entries no longer match anything.
       CACHE_PACKAGES: >-
         [a-z_]+[.]traineddata
         asf-ui
@@ -110,13 +110,33 @@ jobs:
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
         with:
-          # The extra substituter is the cache the NixOS jobs upload to
-          # (empty, so ignored, until the CACHE_* variables are set)
+          # The key signs what the NixOS jobs upload to the cache (empty, so
+          # ignored, until the CACHE_* variables are set)
           nix_conf: |
             keep-outputs = true
             ${{ runner.os == 'Linux' && 'build-dir = /nix/build' || '' }}
-            extra-substituters = ${{ runner.os == 'Linux' && vars.CACHE_URL || '' }}
             extra-trusted-public-keys = ${{ runner.os == 'Linux' && vars.CACHE_PUBLIC_KEY || '' }}
+
+      # The cache is a private bucket, read through its S3 API like the
+      # hosts do: credentials where Nix's AWS code looks for them, and the
+      # bucket as an extra substituter for every later step. Stops here,
+      # before the long build, if the bucket can't be read.
+      - name: Set up read access to the cache
+        if: runner.os == 'Linux' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
+        env:
+          CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
+          CACHE_ENDPOINT: ${{ secrets.CACHE_ENDPOINT }}
+          CACHE_ACCESS_KEY_ID: ${{ secrets.CACHE_ACCESS_KEY_ID }}
+          CACHE_SECRET_ACCESS_KEY: ${{ secrets.CACHE_SECRET_ACCESS_KEY }}
+        run: |
+          mkdir -p ~/.aws
+          (umask 077 && printf '[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n' \
+            "$CACHE_ACCESS_KEY_ID" "$CACHE_SECRET_ACCESS_KEY" > ~/.aws/credentials)
+          # The secret is a URL (rclone wants one); Nix takes the host name
+          endpoint="${CACHE_ENDPOINT#*://}"
+          store="s3://${CACHE_BUCKET}?endpoint=${endpoint%/}&region=auto"
+          nix store info --store "$store"
+          echo "NIX_CONFIG=extra-substituters = $store" >> "$GITHUB_ENV"
 
       - name: Load deploy key for the secrets repo
         uses: webfactory/ssh-agent@v0.10.0
@@ -164,13 +184,12 @@ jobs:
           echo "${HOST}: \`$(readlink result)\`" >> "$GITHUB_STEP_SUMMARY"
 
       # Uploads the few packages that have to be compiled, so the next run and
-      # the hosts themselves download them instead. The bucket is public: only
-      # packages named in CACHE_PACKAGES go in.
+      # the hosts themselves download them instead: the ones named in
+      # CACHE_PACKAGES, or everything for a cache_all host.
       - name: Upload compiled packages to the cache
         if: runner.os == 'Linux' && vars.CACHE_BUCKET != '' && github.actor != 'dependabot[bot]'
         env:
           CACHE_ALL: ${{ matrix.cache_all || false }}
-          CACHE_URL: ${{ vars.CACHE_URL }}
           CACHE_BUCKET: ${{ vars.CACHE_BUCKET }}
           CACHE_SIGNING_KEY: ${{ secrets.CACHE_SIGNING_KEY }}
           RCLONE_CONFIG_R2_TYPE: s3
@@ -197,12 +216,15 @@ jobs:
               sub(/^\/nix\/store\/[a-z0-9]+-/, "", name)
               if (name ~ ENVIRON["PATTERN"]) print $1
             }' > "$work/candidates"
-          # shellcheck disable=SC2016
-          BASE="${CACHE_URL%/}" xargs -P 8 -I{} sh -c '
-            hash="${1#/nix/store/}"
-            hash="${hash%%-*}"
-            curl --fail --silent --head --output /dev/null "$BASE/$hash.narinfo" || echo "$1"
-          ' _ {} < "$work/candidates" > "$work/missing"
+          nix run --inputs-from . nixpkgs#rclone -- lsf --files-only \
+            --include '*.narinfo' "r2:${CACHE_BUCKET}" > "$work/present"
+          awk '
+            FILENAME == ARGV[1] { sub(/\.narinfo$/, ""); present[$0]; next }
+            {
+              hash = $1
+              sub(/^\/nix\/store\//, "", hash); sub(/-.*/, "", hash)
+              if (!(hash in present)) print $1
+            }' "$work/present" "$work/candidates" > "$work/missing"
 
           echo "$(wc -l < "$work/candidates") matching, $(wc -l < "$work/missing") to upload"
           if [ ! -s "$work/missing" ]; then

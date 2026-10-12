@@ -84,8 +84,16 @@ in
         nix.settings.extra-platforms = cfg.extraPlatforms;
       })
       (lib.mkIf cfg.ciCache.enable {
+        # A private Cloudflare R2 bucket, read through its S3 API with a
+        # read-only token that is placed on the machine by hand, in root's
+        # AWS credentials file, /root/.aws/credentials (see README.md,
+        # "Binary cache"). Nix finds it there whether root runs it or the
+        # daemon does. Without that file Nix warns and carries on with
+        # cache.nixos.org alone.
         nix.settings = {
-          extra-substituters = [ "https://cache.nixkeeper.com" ];
+          extra-substituters = [
+            "s3://nixos-configs-cache?endpoint=ebce6e5a60de848f692507c157f09f80.r2.cloudflarestorage.com&region=auto"
+          ];
           extra-trusted-public-keys = [
             "nixos-configs-cache-1:CW5tDg3uwOBmz8C2a29loFeNcqo4sjInPjTgd0zIhOc="
           ];
