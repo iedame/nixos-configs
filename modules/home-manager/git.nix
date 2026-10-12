@@ -32,9 +32,9 @@ in
       enable = lib.mkEnableOption "signing commits and tags with an SSH key held by 1Password";
       key = lib.mkOption {
         type = lib.types.str;
-        # 1Password SSH key, also a GitHub login key
-        # (SHA256:u9tymbo3MxmadJAyyJvRq4C+qerPciuRvMU9CMk1GTY)
-        default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIo2Gq92qOW6e/+8g8R0ob+LZvmrZ6DjUj3V48HYrK98";
+        # The same key that logs in to the hosts (lib/hosts.nix)
+        default = (import ../../lib/hosts.nix).admin.key;
+        defaultText = lib.literalExpression "(import ../../lib/hosts.nix).admin.key";
         description = "Public SSH key used for signing (the private half stays in 1Password)";
       };
     };

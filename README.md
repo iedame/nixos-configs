@@ -22,6 +22,7 @@ hosts/<Host>/             per-host system config (+ users/haoji for home-manager
 modules/nixos/            NixOS modules        (nixosModules.default)
 modules/darwin/           nix-darwin modules   (darwinModules.default)
 modules/home-manager/     home-manager modules (homeModules.default)
+lib/hosts.nix             the hosts' addresses and the admin SSH key, as data
 overlays/                 package overrides
 ```
 
