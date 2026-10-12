@@ -119,10 +119,36 @@
     '';
   };
 
+  # Video playback. This GPU decodes H.264 but not the VP9 and AV1 that
+  # YouTube prefers, and the CPU can't keep up with those in software (a
+  # 1080p60 H.264 clip took 30 s of CPU time to decode in software, 0.3 s
+  # on the GPU). So both browsers are told to decode on the GPU and to ask
+  # for H.264: Firefox through preferences, Chrome through start-up flags
+  # and the h264ify extension.
   programs.firefox = {
     enable = true;
     languagePacks = [ "pt-BR" ];
+    preferences = {
+      "media.av1.enabled" = false;
+      "media.ffmpeg.vaapi.enabled" = true;
+      "media.hardware-video-decoding.force-enabled" = true;
+      "media.mediasource.vp9.enabled" = false;
+    };
   };
+  # Only writes browser policies (which Chrome reads too); it doesn't
+  # install Chromium
+  programs.chromium = {
+    enable = true;
+    extensions = [ "aleakchihdccplidncghkekgioiakgal" ]; # h264ify
+  };
+
+  nixpkgs.overlays = [
+    (final: prev: {
+      google-chrome = prev.google-chrome.override {
+        commandLineArgs = "--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL";
+      };
+    })
+  ];
 
   environment.systemPackages = with pkgs; [
     # keep-sorted start case=no
