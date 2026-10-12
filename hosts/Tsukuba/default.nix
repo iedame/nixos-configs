@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -27,6 +32,21 @@
   # The hardware profile (flake.nix) assumes the PCIe camera of later
   # MacBooks and would build its unfree driver; this model's is plain USB
   hardware.facetimehd.enable = false;
+
+  # Wi-Fi (Broadcom BCM4331): Broadcom's own driver instead of the kernel's
+  # b43, which the hardware profile selects. b43 has no 802.11n support for
+  # this card and measured 14 Mbit/s here. The driver is unmaintained and
+  # nixpkgs marks it insecure (CVE-2019-9501, CVE-2019-9502), hence the
+  # exception; matching by name keeps it valid across kernel updates, which
+  # change the package's full name.
+  networking.enableB43Firmware = false;
+  boot.kernelModules = [ "wl" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+  boot.blacklistedKernelModules = [
+    "b43"
+    "bcma"
+  ];
+  nixpkgs.config.allowInsecurePredicate = pkg: lib.getName pkg == "broadcom-sta";
 
   networking.hostName = "Tsukuba"; # Must match nixosConfigurations.Tsukuba in flake.nix
 

@@ -38,13 +38,12 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 
 ## Host-specific pieces
 
-- **Wi-Fi**: a Broadcom BCM4331, driven by the kernel's `b43` driver with
-  downloaded firmware (`networking.enableB43Firmware`, set by the hardware
-  profile). If it proves unreliable, the alternative is Broadcom's own
-  driver: `boot.kernelModules = [ "wl" ]`,
-  `boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ]`,
-  `networking.enableB43Firmware = false`, and the package allowed through
-  `custom.nix-core.permittedInsecurePackages`.
+- **Wi-Fi**: a Broadcom BCM4331, driven by Broadcom's own `wl` driver
+  (`broadcom_sta`). The hardware profile's choice, the kernel's `b43` with
+  downloaded firmware, works but has no 802.11n for this card and managed
+  14 Mbit/s. `wl` is unmaintained and marked insecure in nixpkgs, so
+  `default.nix` allows it by name. CI builds the module and uploads it to
+  the cache, so kernel updates don't compile it on the laptop.
 - **Apps**: Firefox, Chrome, OnlyOffice and VLC come from this config.
   Anything else can be installed from Discover through Flatpak, without
   administrator rights.
@@ -58,33 +57,45 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 
 ## Installing
 
-Not tried yet. It erases the laptop's disk, so copy the home directory
-somewhere first.
+This is how it was installed (from Kawagoe, about 25 minutes). It erases the
+laptop's disk, so copy the home directory somewhere first.
 
-1. Boot the laptop from a NixOS installer USB stick (hold Option at
-   power-on), connect an Ethernet cable, set a password for the installer's
-   user with `passwd`, and note the address shown by `ip a`.
-2. From Aurora, partition, generate the hardware settings and install,
-   without rebooting yet:
+1. Boot the laptop from a NixOS minimal installer USB stick (hold Option at
+   power-on, choose "EFI Boot"), connect an Ethernet cable, set a password
+   for the installer's user with `passwd`, and note the address shown by
+   `ip a`.
+2. Add an SSH key to the installer session, for step 4 (`key.pub` holds the
+   public key authorised in `users.nix`):
+
+   ```bash
+   ssh-copy-id -f -i key.pub -o IdentityAgent=none nixos@<address>
+   ```
+
+3. Partition, generate the hardware settings and install, without rebooting
+   yet. `--build-on remote` makes the laptop download and build its own
+   system, straight onto its disk, so this works from a Mac too:
 
    ```bash
    cd ~/.config/nixos-configs
    nix run github:nix-community/nixos-anywhere -- \
      --flake .#Tsukuba \
+     --build-on remote \
      --generate-hardware-config nixos-generate-config ./hosts/Tsukuba/hardware-configuration.nix \
      --phases kexec,disko,install \
+     --ssh-option IdentityAgent=none \
      --target-host nixos@<address>
    ```
 
-3. Set the two passwords in the installed system, then reboot:
+4. Set the two passwords in the installed system, then remove the stick and
+   reboot:
 
    ```bash
-   ssh root@<address> nixos-enter --root /mnt -c "'passwd haoji'"
-   ssh root@<address> nixos-enter --root /mnt -c "'passwd yuki'"
-   ssh root@<address> reboot
+   ssh -t -o IdentitiesOnly=yes -i key.pub nixos@<address> "sudo nixos-enter --root /mnt -c 'passwd haoji'"
+   ssh -t -o IdentitiesOnly=yes -i key.pub nixos@<address> "sudo nixos-enter --root /mnt -c 'passwd yuki'"
    ```
 
-4. Log in on the laptop as `haoji`, join the tailnet with
-   `sudo tailscale up`, and tag the device in the admin console.
-5. Commit the generated `hardware-configuration.nix` and merge it, so that
-   `master` describes the machine as installed.
+5. On the laptop, open a terminal, become `haoji` with `su - haoji`, join
+   the tailnet with `sudo tailscale up`, and tag the device in the admin
+   console.
+6. Run `nix fmt`, then commit the generated `hardware-configuration.nix` and
+   merge it, so that `master` describes the machine as installed.
