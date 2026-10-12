@@ -13,19 +13,18 @@
     extraSetFlags = [ "--advertise-exit-node" ];
   };
 
-  # Uptime monitoring, reachable over Tailscale only: http://narita:3001
+  # Uptime monitoring. It listens on this machine only and is published
+  # on the tailnet as a Tailscale Service, with its own name and HTTPS
+  # certificate: https://kuma-narita.<tailnet>.ts.net
+  # (modules/nixos/tailscale-services.nix). Nikko runs one too, and each
+  # watches the other.
   services.uptime-kuma = {
     enable = true;
     settings = {
-      HOST = "0.0.0.0";
+      HOST = "127.0.0.1";
       PORT = "3001";
     };
   };
-  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 3001 ];
-
-  # The same Uptime Kuma as a Tailscale Service, with its own name and
-  # HTTPS certificate: https://kuma-narita.<tailnet>.ts.net
-  # (modules/nixos/tailscale-services.nix)
   custom.tailscale-services."kuma-narita".target = "http://127.0.0.1:3001";
 
   # This value determines the NixOS release from which the default
