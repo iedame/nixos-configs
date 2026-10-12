@@ -23,14 +23,10 @@
   };
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 3001 ];
 
-  # The same Uptime Kuma as a Tailscale Service: its own name and HTTPS
-  # certificate on the tailnet, https://kuma-narita.<tailnet>.ts.net. The
-  # service has to be defined in the admin console (tcp:443), this host
-  # approved for it, and access to svc:kuma-narita granted in the rules.
-  services.tailscale.serve = {
-    enable = true;
-    services."kuma-narita".endpoints."tcp:443" = "http://127.0.0.1:3001";
-  };
+  # The same Uptime Kuma as a Tailscale Service, with its own name and
+  # HTTPS certificate: https://kuma-narita.<tailnet>.ts.net
+  # (modules/nixos/tailscale-services.nix)
+  custom.tailscale-services."kuma-narita".target = "http://127.0.0.1:3001";
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
