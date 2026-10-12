@@ -14,6 +14,17 @@ let
       ''"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"''
     else
       "~/.1password/agent.sock";
+
+  # The hosts' own keys, under both the address and the name they can be
+  # reached by, so ssh knows them without asking and refuses a host that
+  # presents a different key
+  knownHosts = pkgs.writeText "known-hosts" (
+    lib.concatStrings (
+      lib.mapAttrsToList (name: host: ''
+        ${host.address},${lib.toLower name} ${host.hostKey}
+      '') inventory.hosts
+    )
+  );
 in
 {
   options.custom.ssh = {
@@ -38,6 +49,9 @@ in
           "*" = {
             # Keys live in 1Password; the agent offers them and asks to approve
             IdentityAgent = onePasswordAgent;
+            # The usual file for everything else, plus the pinned keys of
+            # the hosts in lib/hosts.nix
+            UserKnownHostsFile = "~/.ssh/known_hosts ${knownHosts}";
           };
         };
     };
