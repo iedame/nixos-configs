@@ -59,6 +59,36 @@ and `# keep-sorted end` comments. Add a package anywhere in such a list and
 that fails on anything unformatted or unsorted. Flake inputs are updated weekly by a GitHub
 Actions PR.
 
+## Binary cache
+
+CI builds every host on each pull request and uploads what
+`cache.nixos.org` doesn't have to a private Cloudflare R2 bucket: a short
+list of packages for Aurora and Tsukuba, the whole system for Narita and
+Nikko, which can't build their own (`.github/workflows/ci.yml`). The NixOS
+hosts download from it with `custom.nix-core.ciCache.enable`
+(`modules/nixos/nix-core.nix`).
+
+The bucket is read through R2's S3 API, so each host needs a read-only
+token for it (Cloudflare dashboard, R2, "Manage API tokens": Object Read
+only, limited to this bucket). It is placed by hand, once per host, in
+root's AWS credentials file:
+
+```bash
+ssh -t <host> 'sudo install -d -m 700 /root/.aws && sudo sh -c "umask 077; cat > /root/.aws/credentials"'
+```
+
+Then paste these three lines and press Ctrl-D:
+
+```ini
+[default]
+aws_access_key_id = <access key ID>
+aws_secret_access_key = <secret access key>
+```
+
+A host without the file still works: Nix prints a warning and uses
+`cache.nixos.org` alone, which means compiling the missing packages itself
+(Narita and Nikko can't, and fail to update instead).
+
 ## Secrets
 
 Secrets are encrypted with [agenix](https://github.com/ryantm/agenix) and
