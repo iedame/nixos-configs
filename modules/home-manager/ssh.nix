@@ -35,6 +35,12 @@ in
       default = "100.111.191.17";
       description = "Address for the `narita` host alias";
     };
+    nikkoAddress = lib.mkOption {
+      type = lib.types.str;
+      # Nikko's Tailscale IP, kept across its conversion from Ubuntu
+      default = "100.78.232.17";
+      description = "Address for the `nikko` host alias";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -53,6 +59,10 @@ in
         };
         narita = {
           HostName = cfg.naritaAddress;
+          User = "haoji";
+        };
+        nikko = {
+          HostName = cfg.nikkoAddress;
           User = "haoji";
         };
         "*" = {

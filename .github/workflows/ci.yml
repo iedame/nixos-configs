@@ -86,6 +86,10 @@ jobs:
             os: ubuntu-latest
             attr: nixosConfigurations.Narita.config.system.build.toplevel
             cache_all: true
+          - host: Nikko
+            os: ubuntu-latest
+            attr: nixosConfigurations.Nikko.config.system.build.toplevel
+            cache_all: true
           - host: Kawagoe
             os: macos-latest
             attr: darwinConfigurations.Kawagoe.system
