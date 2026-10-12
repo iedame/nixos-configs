@@ -293,37 +293,52 @@ jobs:
             --apply "($(cat .github/scripts/package-licences.nix)) [ $list ]" \
             | jq -r 'to_entries[] | "\(.key)\t\(.value)"' > "$work/licences"
 
+          # One row per package, cached ones first, then by name. For a
+          # cache_all host only real packages get a row: its generated files
+          # are all uploaded and are just counted, on the last line.
+          PATTERN="$pattern" LICENCES="$work/licences" awk '
+            BEGIN {
+              while ((getline line < ENVIRON["LICENCES"]) > 0) {
+                split(line, field, "\t")
+                licence[field[1]] = field[2]
+              }
+            }
+            NR == FNR { package[$1] = $2; next }
+            {
+              name = $1; sub(/^\/nix\/store\/[a-z0-9]+-/, "", name)
+              drv = $3; sub(/.*\//, "", drv)
+              cached = (name ~ ENVIRON["PATTERN"])
+              if (drv in package) { name = package[drv]; terms[name] = licence[drv] }
+              else if (!cached) next
+              else if (ENVIRON["CACHE_ALL"] == "true") { others++; next }
+              size[name] += $2
+              if (cached) incache[name] = 1
+            }
+            END {
+              for (name in size)
+                printf "%d\t%s\t| %s | %.1f MiB | %s | %s |\n", !(name in incache), tolower(name),
+                  name, size[name] / 1048576,
+                  (name in terms ? terms[name] : "-"), (name in incache ? "yes" : "no")
+              printf "9\t~\t%d\n", others
+            }' "$work/packages" "$work/table" | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2 | cut -f3- > "$work/rows"
+          others=$(tail -n 1 "$work/rows")
+          sed -i '$d' "$work/rows"
+
+          # Collapsed in the comment: the table gets long
+          summary="$(wc -l < "$work/rows" | tr -d ' ') packages, $(grep -c '| yes |$' "$work/rows" || true) in cache"
+          if [ "$CACHE_ALL" = true ]; then
+            summary="$summary, plus $others generated paths, all in cache"
+          fi
           {
             echo ""
-            echo "#### Not on cache.nixos.org"
+            echo "<details>"
+            echo "<summary>Not on cache.nixos.org: $summary</summary>"
             echo ""
             echo "| Package | Size | Licence | In cache |"
             echo "|---|---:|---|---|"
-            PATTERN="$pattern" LICENCES="$work/licences" awk '
-              BEGIN {
-                while ((getline line < ENVIRON["LICENCES"]) > 0) {
-                  split(line, field, "\t")
-                  licence[field[1]] = field[2]
-                }
-              }
-              NR == FNR { package[$1] = $2; next }
-              {
-                name = $1; sub(/^\/nix\/store\/[a-z0-9]+-/, "", name)
-                drv = $3; sub(/.*\//, "", drv)
-                cached = (name ~ ENVIRON["PATTERN"])
-                if (drv in package) { name = package[drv]; terms[name] = licence[drv] }
-                else if (!cached) next
-                size[name] += $2
-                if (cached) incache[name] = 1
-              }
-              END {
-                # Cached ones first, then by name
-                for (name in size)
-                  printf "%d\t%s\t| %s | %.1f MiB | %s | %s |\n", !(name in incache), tolower(name),
-                    name, size[name] / 1048576,
-                    (name in terms ? terms[name] : "-"), (name in incache ? "yes" : "no")
-              }' "$work/packages" "$work/table" | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2 | cut -f3-
-
+            cat "$work/rows"
+            echo ""
+            echo "</details>"
             echo ""
           } > "$work/report.md"
           cat "$work/report.md" >> "diff-${HOST}.md"

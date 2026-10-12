@@ -105,6 +105,7 @@
             ./modules/nixos/fonts.nix
             ./modules/nixos/plasma.nix
             ./modules/nixos/ssh-server.nix
+            ./modules/nixos/tailscale-services.nix
           ];
         };
 
