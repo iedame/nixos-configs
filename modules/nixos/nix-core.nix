@@ -34,6 +34,16 @@ in
       downloading the packages this repository's CI builds and uploads (the
       ones cache.nixos.org doesn't have; see .github/workflows/ci.yml)
     '';
+    ciCache.bucket = lib.mkOption {
+      type = lib.types.str;
+      default = "nixos-configs-cache";
+      description = "The cache's Cloudflare R2 bucket.";
+    };
+    ciCache.endpoint = lib.mkOption {
+      type = lib.types.str;
+      default = "ebce6e5a60de848f692507c157f09f80.r2.cloudflarestorage.com";
+      description = "Host name of the S3 API of the R2 account the bucket is in.";
+    };
     permittedInsecurePackages = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -92,7 +102,7 @@ in
         # cache.nixos.org alone.
         nix.settings = {
           extra-substituters = [
-            "s3://nixos-configs-cache?endpoint=ebce6e5a60de848f692507c157f09f80.r2.cloudflarestorage.com&region=auto"
+            "s3://${cfg.ciCache.bucket}?endpoint=${cfg.ciCache.endpoint}&region=auto"
           ];
           extra-trusted-public-keys = [
             "nixos-configs-cache-1:CW5tDg3uwOBmz8C2a29loFeNcqo4sjInPjTgd0zIhOc="

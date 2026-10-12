@@ -70,6 +70,9 @@
     ciCache.enable = true;
   };
   custom.locale.enable = true;
+  # And activates what CI publishes after each merge, by itself
+  # (modules/nixos/self-deploy.nix)
+  custom.self-deploy.enable = true;
 
   # CI uploads everything in these hosts' systems that cache.nixos.org
   # lacks to the cache. That includes the private secrets repository, which
