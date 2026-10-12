@@ -81,6 +81,20 @@
           };
         }
       );
+
+      oracleMicro =
+        host:
+        inputs.nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = {
+            inherit inputs;
+          };
+          modules = [
+            self.nixosModules.default
+            self.nixosModules.oracle-micro
+            host
+          ];
+        };
     in
     {
       nixosModules = {
@@ -97,6 +111,9 @@
         # Sets home-manager options, so only for hosts that use home-manager
         # as a NixOS module
         runescape = ./modules/nixos/runescape.nix;
+
+        # Oracle Cloud micro instances; describes their hardware and disk
+        oracle-micro = ./modules/nixos/oracle-micro.nix;
       };
 
       darwinModules.default = {
@@ -170,6 +187,9 @@
           inputs.nixos-hardware.nixosModules.apple-macbook-pro-8-1
         ];
       };
+
+      # Oracle Cloud Always Free micro instances
+      nixosConfigurations.Narita = oracleMicro ./hosts/Narita;
 
       darwinConfigurations.Kawagoe = inputs.nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";

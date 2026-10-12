@@ -11,6 +11,7 @@ home-manager. Layout inspired by
 | [Aurora](hosts/Aurora/README.md) | NixOS, x86_64-linux | Desktop, gaming, home server (Immich, Jellyfin, Forgejo, Vaultwarden, …) |
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
 | [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (2011 MacBook Pro), updates itself from this repo |
+| [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring |
 
 ## Layout
 

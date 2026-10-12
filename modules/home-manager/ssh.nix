@@ -29,6 +29,12 @@ in
       default = "100.115.41.1";
       description = "Address for the `tsukuba` host alias";
     };
+    naritaAddress = lib.mkOption {
+      type = lib.types.str;
+      # Narita's Tailscale IP, kept across its conversion from Ubuntu
+      default = "100.111.191.17";
+      description = "Address for the `narita` host alias";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -43,6 +49,10 @@ in
         };
         tsukuba = {
           HostName = cfg.tsukubaAddress;
+          User = "haoji";
+        };
+        narita = {
+          HostName = cfg.naritaAddress;
           User = "haoji";
         };
         "*" = {

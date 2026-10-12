@@ -9,6 +9,14 @@ in
 {
   options.custom.ssh-server = {
     enable = lib.mkEnableOption "an SSH server reachable only over Tailscale, with key authentication";
+    openToInternet = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Also accept SSH on every interface, not just Tailscale. For a cloud
+        host that hasn't joined the tailnet yet.
+      '';
+    };
   };
 
   # Port 22 is opened on tailscale0, not on the LAN or internet. Also
@@ -32,5 +40,6 @@ in
     };
 
     networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 22 ];
+    networking.firewall.allowedTCPPorts = lib.mkIf cfg.openToInternet [ 22 ];
   };
 }
