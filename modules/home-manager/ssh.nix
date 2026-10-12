@@ -23,6 +23,12 @@ in
       default = "100.110.116.3";
       description = "Address for the `aurora` host alias";
     };
+    tsukubaAddress = lib.mkOption {
+      type = lib.types.str;
+      # Tsukuba's Tailscale IP; its SSH server listens on Tailscale only
+      default = "100.115.41.1";
+      description = "Address for the `tsukuba` host alias";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -33,6 +39,10 @@ in
       settings = {
         aurora = {
           HostName = cfg.auroraAddress;
+          User = "haoji";
+        };
+        tsukuba = {
+          HostName = cfg.tsukubaAddress;
           User = "haoji";
         };
         "*" = {
