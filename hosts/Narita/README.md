@@ -39,13 +39,19 @@ heartbeat interval is 300 seconds: five reports' worth, so a single late or
 lost report doesn't raise an alarm.
 
 The monitor's push URL contains the tailnet's name and a token, so it is
-not in this repository. It lives in `/etc/heartbeat-url` on the machine and
-has to be put back by hand after a reinstall. This prompts for it, stores
-it readable by root only, and sends a first report:
+not in this repository: it is the agenix secret `narita/heartbeat-url.age`
+in the private secrets repository (`secrets.nix` here; see "Secrets" in the
+top-level README), decrypted with this machine's SSH host key. To change
+it, from the secrets repository's clone:
 
 ```bash
-ssh -t narita 'read -rsp "Push URL: " u && echo && printf "%s\n" "$u" | sudo install -m 600 /dev/stdin /etc/heartbeat-url && sudo systemctl start heartbeat.service && journalctl -u heartbeat.service -n 3 --no-pager -o cat'
+agenix -e narita/heartbeat-url.age -i ~/.ssh/agenix
 ```
+
+Then commit and push there, run `nix flake update secrets` here, and update
+the host. A reinstall that doesn't keep the SSH host key needs the new key
+in `lib/hosts.nix` and in the secrets repository's `agenix-rules.nix`,
+followed by `agenix -r` there.
 
 ## Installing
 

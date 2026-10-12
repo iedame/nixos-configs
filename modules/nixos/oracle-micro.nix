@@ -10,9 +10,7 @@
 # image's partitions, which is why the file systems below go by Ubuntu's
 # labels.
 {
-  lib,
   modulesPath,
-  options,
   ...
 }:
 {
@@ -74,20 +72,13 @@
   custom.locale.enable = true;
 
   # CI uploads everything in these hosts' systems that cache.nixos.org
-  # lacks to the public cache. Two guards follow from that. Nothing unfree
-  # may end up in them: with this, adding such a package fails to evaluate
-  # instead of being published.
-  nixpkgs.config.allowUnfree = lib.mkForce false;
-  # And no agenix: a system that uses a secret references the whole private
-  # secrets repository (encrypted, but meant to stay private), which would
-  # then be uploaded with it. Secrets for these hosts need another route,
-  # such as a file placed on the machine by hand.
-  assertions = [
-    {
-      assertion = !(options ? age);
-      message = "Oracle micro hosts publish their system to a public cache, so they must not import agenix; see modules/nixos/oracle-micro.nix.";
-    }
-  ];
+  # lacks to the cache. That includes the private secrets repository, which
+  # a system using an agenix secret refers to as a whole: encrypted files
+  # only, and the reason the cache's bucket is private.
+  #
+  # agenix decrypts a host's secrets with its SSH host key (needs
+  # inputs.agenix.nixosModules.default, which flake.nix adds)
+  age.identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
   # 1 GB of memory: compressed swap in RAM plus a swap file, one build at a
   # time, a small journal and no locally built NixOS manual. Evaluating a
