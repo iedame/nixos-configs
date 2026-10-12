@@ -35,8 +35,9 @@ then sends a Telegram message if a systemd unit has failed here, or if the
 reports stop for longer than the monitor's heartbeat interval. Narita
 reports to the monitor named "Narita" on Nikko's Uptime Kuma, and Nikko to
 the one on Narita's, since a host can't announce its own outage. Their
-heartbeat interval is 300 seconds: five reports' worth, so a single late or
-lost report doesn't raise an alarm.
+heartbeat interval is 90 seconds with 3 retries: reports arrive a little
+over a minute apart, so each one lands inside the window, and it takes
+several missed in a row to raise an alarm.
 
 The monitor's push URL contains the tailnet's name and a token, so it is
 not in this repository: it is the agenix secret `narita/heartbeat-url.age`
@@ -52,6 +53,47 @@ Then commit and push there, run `nix flake update secrets` here, and update
 the host. A reinstall that doesn't keep the SSH host key needs the new key
 in `lib/hosts.nix` and in the secrets repository's `agenix-rules.nix`,
 followed by `agenix -r` there.
+
+## Backup
+
+Uptime Kuma's monitors, notification settings and history exist only in
+its database. Every night around 03:30 a consistent copy of it is uploaded,
+encrypted, by restic to the private R2 bucket `oracle-nixos-backups`, in
+the folder `narita` (`custom.uptime-kuma-backup`,
+`modules/nixos/uptime-kuma-backup.nix`). Seven daily, four weekly and six
+monthly copies are kept. A failed backup shows up as a failed unit in the
+health reports above.
+
+The bucket's token and the encryption password are the agenix secret
+`shared/backup.env.age`, the same for both servers. Without that password
+the backup can't be read, so it is also kept in 1Password. It can be
+printed from the secrets repository's clone as well, with the editing key
+or a YubiKey, even if both servers are gone:
+
+```bash
+agenix -d shared/backup.env.age -i ~/.ssh/agenix
+```
+
+```bash
+ssh narita sudo restic-uptime-kuma snapshots          # list the copies
+ssh narita sudo systemctl start restic-backups-uptime-kuma   # back up now
+```
+
+To restore the latest copy on the host:
+
+```bash
+sudo systemctl stop uptime-kuma
+sudo restic-uptime-kuma restore latest --target /tmp/restore
+sudo rm -f /var/lib/uptime-kuma/kuma.db-shm /var/lib/uptime-kuma/kuma.db-wal
+sudo cp /tmp/restore/var/backup/uptime-kuma/kuma.db /var/lib/uptime-kuma/kuma.db
+sudo chown --reference=/var/lib/private/uptime-kuma /var/lib/uptime-kuma/kuma.db
+sudo systemctl start uptime-kuma
+sudo rm -rf /tmp/restore
+```
+
+The `chown` gives the restored file the same owner as the data folder,
+which is the ID the service runs under. On a newly installed host, let
+Uptime Kuma start once first so that folder exists.
 
 ## Installing
 

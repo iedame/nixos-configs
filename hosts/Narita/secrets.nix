@@ -7,5 +7,8 @@
   age.secrets = {
     # Push URL of this host's monitor on Nikko's Uptime Kuma
     "heartbeat-url".file = "${inputs.secrets}/narita/heartbeat-url.age";
+    # R2 token and encryption password for the backup of Uptime Kuma; the
+    # same file on both servers
+    "backup.env".file = "${inputs.secrets}/shared/backup.env.age";
   };
 }
