@@ -6,7 +6,8 @@
   # fileSystems entries, so hardware-configuration.nix has none.
   disko.devices.disk.main = {
     type = "disk";
-    device = "/dev/sda";
+    # By serial number rather than /dev/sda, which a USB stick can take
+    device = "/dev/disk/by-id/ata-WDC_WDS240G1G0A-00SS50_171869452308";
     content = {
       type = "gpt";
       partitions = {
