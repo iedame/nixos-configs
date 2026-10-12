@@ -13,6 +13,10 @@ in
   # defined in the admin console, this host approved for it, and access to
   # svc:<name> granted in the access rules.
   #
+  # A device only sees a service (its name doesn't even resolve) if a rule
+  # lets that device's tag reach it. That includes the host itself: for a
+  # host to open its own service address, its tag needs such a rule too.
+  #
   # nixpkgs has services.tailscale.serve for this, but its configuration
   # file can't express "HTTPS on the tailnet, plain HTTP locally" (as of
   # Tailscale 1.102 the local scheme decides both sides), so this runs the

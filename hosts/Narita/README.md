@@ -4,7 +4,7 @@ NixOS on an Oracle Cloud "Always Free" micro instance (the one that was
 called `helheim` under Ubuntu)
 (VM.Standard.E2.1.Micro, x86_64-linux: 1 GB of memory, two threads of a
 shared CPU core). It runs Uptime Kuma, reachable over Tailscale at
-`http://narita:3001`.
+`https://kuma-narita.<tailnet>.ts.net`.
 
 The machine itself (disk, boot loader, memory settings, admin account) is
 described in `modules/nixos/oracle-micro.nix`; `default.nix` here only has
