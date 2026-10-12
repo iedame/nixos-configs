@@ -25,6 +25,13 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 5;
   boot.loader.efi.canTouchEfiVariables = true;
+  # One second at the boot menu instead of five; pressing a key during it
+  # (or holding Space while it starts) still gives the list of generations
+  boot.loader.timeout = 1;
+
+  # Always plugged in (the battery is dead), so the CPU can run at full
+  # speed all the time rather than ramping up on demand
+  powerManagement.cpuFreqGovernor = "performance";
 
   # Compressed swap in RAM instead of a swap partition
   zramSwap.enable = true;
@@ -71,6 +78,21 @@
   };
   # Same layout on the text console
   console.useXkbConfig = true;
+
+  # Lighter desktop for an old dual-core: no KDE mail and calendar suite
+  # (Plasma installs it by default, and its Akonadi backend runs a database
+  # server in every session), no file indexing, and no animations, so
+  # windows and menus appear at once. The two files are Plasma's defaults
+  # for every user; a setting changed in System Settings takes precedence.
+  programs.kde-pim.enable = false;
+  environment.etc."xdg/baloofilerc".text = ''
+    [Basic Settings]
+    Indexing-Enabled=false
+  '';
+  environment.etc."xdg/kdeglobals".text = ''
+    [KDE]
+    AnimationDurationFactor=0
+  '';
 
   # Straight to the desktop at power-on, no password. KWallet is unlocked by
   # the login password, so with automatic login it would ask for one itself
@@ -139,13 +161,24 @@
       # No browsing history (see below)
       "places.history.enabled" = false;
     };
-    policies.DisableFormHistory = true;
+    policies = {
+      DisableFormHistory = true;
+      # uBlock Origin: ads and trackers are a large share of what a page
+      # makes this CPU do
+      ExtensionSettings."uBlock0@raymondhill.net" = {
+        installation_mode = "force_installed";
+        install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+      };
+    };
   };
   # Only writes browser policies (which Chrome reads too); it doesn't
   # install Chromium
   programs.chromium = {
     enable = true;
-    extensions = [ "aleakchihdccplidncghkekgioiakgal" ]; # h264ify
+    extensions = [
+      "aleakchihdccplidncghkekgioiakgal" # h264ify
+      "ddkjiahejlhfcafbddmgiahcphecmpfh" # uBlock Origin Lite
+    ];
     extraOpts.SavingBrowserHistoryDisabled = true;
   };
   # Neither browser keeps a history of visited pages (in Firefox, nor of

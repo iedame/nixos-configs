@@ -51,6 +51,9 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 - **Browsing history**: neither Firefox nor Chrome records visited pages;
   logins, cookies and bookmarks are kept. Set by policy in `default.nix`,
   so it can't be switched back on in the browser.
+- **Tuned for an old CPU**: ad blockers in both browsers (uBlock Origin,
+  uBlock Origin Lite), the CPU always at full speed, no KDE mail suite, no
+  file indexing, no desktop animations, a one-second boot menu.
 - **Video**: the GPU decodes H.264 only, so Firefox and Chrome are set up
   to decode on the GPU and to ask YouTube for H.264 (see `default.nix`).
 - **Apps**: Firefox, Chrome, OnlyOffice and VLC come from this config.
