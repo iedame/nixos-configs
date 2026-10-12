@@ -79,6 +79,17 @@ ssh narita sudo restic-uptime-kuma snapshots          # list the copies
 ssh narita sudo systemctl start restic-backups-uptime-kuma   # back up now
 ```
 
+Once a week (Sunday around 06:30) the newest copy is restored into a
+scratch folder and checked: it must be less than 48 hours old, the database
+must pass SQLite's integrity check and contain monitors, and every file in
+the repository is read back and verified. The test only reads; it changes
+neither the running Uptime Kuma nor the copies in the bucket. If it fails,
+the health reports above say so. To run it now:
+
+```bash
+ssh narita 'sudo systemctl start uptime-kuma-restore-test && journalctl -u uptime-kuma-restore-test -n 3 --no-pager -o cat'
+```
+
 To restore the latest copy on the host:
 
 ```bash
