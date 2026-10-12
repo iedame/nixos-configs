@@ -59,7 +59,7 @@ followed by `agenix -r` there.
 Uptime Kuma's monitors, notification settings and history exist only in
 its database. Every night around 03:30 a consistent copy of it is uploaded,
 encrypted, by restic to the private R2 bucket `oracle-nixos-backups`, in
-the folder `narita` (`custom.uptime-kuma-backup`,
+the folder `narita/uptime-kuma` (`custom.uptime-kuma-backup`,
 `modules/nixos/uptime-kuma-backup.nix`). Seven daily, four weekly and six
 monthly copies are kept. A failed backup shows up as a failed unit in the
 health reports above.

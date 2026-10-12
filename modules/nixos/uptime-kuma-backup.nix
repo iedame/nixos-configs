@@ -34,9 +34,12 @@ in
     enable = lib.mkEnableOption "a nightly off-site backup of Uptime Kuma's data";
     repository = lib.mkOption {
       type = lib.types.str;
-      default = "s3:https://ebce6e5a60de848f692507c157f09f80.r2.cloudflarestorage.com/oracle-nixos-backups/${lib.toLower config.networking.hostName}";
-      defaultText = lib.literalExpression ''"s3:https://<account>.r2.cloudflarestorage.com/oracle-nixos-backups/<host name>"'';
-      description = "The restic repository: one folder per host in the backups bucket.";
+      default = "s3:https://ebce6e5a60de848f692507c157f09f80.r2.cloudflarestorage.com/oracle-nixos-backups/${lib.toLower config.networking.hostName}/uptime-kuma";
+      defaultText = lib.literalExpression ''"s3:https://<account>.r2.cloudflarestorage.com/oracle-nixos-backups/<host name>/uptime-kuma"'';
+      description = ''
+        The restic repository: a folder per host in the backups bucket, and
+        in it one per service that is backed up.
+      '';
     };
     environmentFile = lib.mkOption {
       type = lib.types.str;
