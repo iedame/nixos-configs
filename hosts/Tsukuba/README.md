@@ -14,7 +14,8 @@ this host on every pull request first.
 
 - State of the last run: `systemctl status nixos-upgrade`
 - Apply something right away, over Tailscale:
-  `ssh haoji@tsukuba`, then `sudo nixos-rebuild switch --flake github:iedame/nixos-configs#Tsukuba --refresh`
+  `ssh tsukuba` (an alias from `modules/home-manager/ssh.nix`), then
+  `sudo nixos-rebuild switch --flake github:iedame/nixos-configs#Tsukuba --refresh`
 - Undo a bad update: pick the previous generation in the boot menu (hold
   Option at power-on for the Mac's boot picker if it doesn't show).
 
