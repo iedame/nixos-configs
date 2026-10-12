@@ -108,6 +108,7 @@
             ./modules/nixos/plasma.nix
             ./modules/nixos/ssh-server.nix
             ./modules/nixos/tailscale-services.nix
+            ./modules/nixos/uptime-kuma-backup.nix
           ];
         };
 

@@ -28,6 +28,12 @@
     };
   };
   custom.tailscale-services."kuma-nikko".target = "http://127.0.0.1:3001";
+  # Its database is backed up every night, encrypted, to a private R2
+  # bucket (modules/nixos/uptime-kuma-backup.nix)
+  custom.uptime-kuma-backup = {
+    enable = true;
+    environmentFile = config.age.secrets."backup.env".path;
+  };
 
   # Reports this host's health to Narita's Uptime Kuma, which alerts if a
   # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The
