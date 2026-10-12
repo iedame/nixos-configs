@@ -62,9 +62,12 @@
   custom.fonts.enable = true;
 
   # KDE Plasma 6 with SDDM and PipeWire (modules/nixos/plasma.nix)
+  # The keyboard is physically a US one: US International types what the
+  # keys show and makes accents with dead keys (' then c gives ç)
   custom.plasma = {
     enable = true;
-    keyboardLayout = "br";
+    keyboardLayout = "us";
+    keyboardVariant = "intl";
   };
   # Same layout on the text console
   console.useXkbConfig = true;
@@ -133,14 +136,21 @@
       "media.ffmpeg.vaapi.enabled" = true;
       "media.hardware-video-decoding.force-enabled" = true;
       "media.mediasource.vp9.enabled" = false;
+      # No browsing history (see below)
+      "places.history.enabled" = false;
     };
+    policies.DisableFormHistory = true;
   };
   # Only writes browser policies (which Chrome reads too); it doesn't
   # install Chromium
   programs.chromium = {
     enable = true;
     extensions = [ "aleakchihdccplidncghkekgioiakgal" ]; # h264ify
+    extraOpts.SavingBrowserHistoryDisabled = true;
   };
+  # Neither browser keeps a history of visited pages (in Firefox, nor of
+  # what was typed into forms and the search bar). Logins, cookies and
+  # bookmarks are kept, so he stays signed in to sites.
 
   nixpkgs.overlays = [
     (final: prev: {

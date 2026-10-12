@@ -45,6 +45,14 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
   14 Mbit/s. `wl` is unmaintained and marked insecure in nixpkgs, so
   `default.nix` allows it by name. CI builds the module and uploads it to
   the cache, so kernel updates don't compile it on the laptop.
+- **Keyboard**: physically a US (ANSI) one, so the layout is US
+  International: keys type what they show, accents are dead keys.
+- **Battery**: dead, so none is detected; the laptop only runs plugged in.
+- **Browsing history**: neither Firefox nor Chrome records visited pages;
+  logins, cookies and bookmarks are kept. Set by policy in `default.nix`,
+  so it can't be switched back on in the browser.
+- **Video**: the GPU decodes H.264 only, so Firefox and Chrome are set up
+  to decode on the GPU and to ask YouTube for H.264 (see `default.nix`).
 - **Apps**: Firefox, Chrome, OnlyOffice and VLC come from this config.
   Anything else can be installed from Discover through Flatpak, without
   administrator rights.

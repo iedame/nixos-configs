@@ -15,6 +15,12 @@ in
       example = "br";
       description = "XKB keyboard layout, also used by the Wayland session and SDDM.";
     };
+    keyboardVariant = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      example = "intl";
+      description = "XKB variant of the keyboard layout; empty for the layout's default.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -29,7 +35,7 @@ in
     # Configure keymap in X11
     services.xserver.xkb = {
       layout = cfg.keyboardLayout;
-      variant = "";
+      variant = cfg.keyboardVariant;
     };
 
     # Enable sound with pipewire.
