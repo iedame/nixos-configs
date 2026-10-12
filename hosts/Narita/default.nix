@@ -4,9 +4,14 @@
   # Everything about the machine itself is in modules/nixos/oracle-micro.nix
   networking.hostName = "Narita"; # Must match nixosConfigurations.Narita in flake.nix
 
-  # Kept open (key only) through the conversion from Ubuntu, in case
-  # Tailscale doesn't come back up. Set to false once it has.
-  custom.ssh-server.openToInternet = true;
+  # Tailscale exit node: other devices on the tailnet can route their
+  # internet traffic through this server. Needs packet forwarding, which
+  # "server" turns on; the flag makes Tailscale offer the node (it still
+  # has to be allowed once in the admin console).
+  services.tailscale = {
+    useRoutingFeatures = "server";
+    extraSetFlags = [ "--advertise-exit-node" ];
+  };
 
   # Uptime monitoring, reachable over Tailscale only: http://narita:3001
   services.uptime-kuma = {

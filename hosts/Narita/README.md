@@ -29,11 +29,23 @@ built, also shown in the run's summary); nothing is built locally.
 
 ## Installing
 
-Not tried yet. A free Oracle account can't import custom images, so NixOS
-is installed over the stock Ubuntu 24.04 image, following the NixOS manual's
+This is how it was converted (about 15 minutes, 70 seconds of downtime). A
+free Oracle account can't import custom images, so NixOS is installed over
+the stock Ubuntu 24.04 image, following the NixOS manual's
 "Installing from another Linux distribution" with one difference: the
 system isn't built on the instance but downloaded from the cache. It keeps
 Ubuntu's partitions. Everything else on the instance is lost.
+
+Two settings are needed in the host's `default.nix` for the conversion only,
+and are removed afterwards:
+
+```nix
+# NixOS moves the old system aside on first boot (/etc/NIXOS_LUSTRATE),
+# which only the scripted initrd does; it is deprecated in nixpkgs
+boot.initrd.systemd.enable = false;
+# A way in if Tailscale doesn't come back
+custom.ssh-server.openToInternet = true;
+```
 
 On the Ubuntu instance, with `system` set to the store path from above:
 
@@ -64,22 +76,24 @@ On the Ubuntu instance, with `system` set to the store path from above:
    printf '%s\n' etc/ssh/ssh_host_ed25519_key etc/ssh/ssh_host_ed25519_key.pub var/lib/tailscale | sudo tee /etc/NIXOS_LUSTRATE
    ```
 
-4. Install NixOS's boot loader, check it, then remove Ubuntu's so the
-   firmware falls back to it:
+4. Install NixOS's boot loader, check it, then remove Ubuntu's loader and
+   its firmware entry, so the firmware boots the disk's fallback loader
+   (the entry numbers come from `efibootmgr`; the disk is "UEFI ORACLE
+   BlockVolume"):
 
    ```bash
    sudo NIXOS_INSTALL_BOOTLOADER=1 /nix/var/nix/profiles/system/bin/switch-to-configuration boot
    sudo ls -l /boot/efi/EFI/BOOT/BOOTX64.EFI && sudo grep -c NixOS /boot/grub/grub.cfg
    sudo rm -rf /boot/efi/EFI/ubuntu
+   sudo efibootmgr -b 0004 -B && sudo efibootmgr -o 0001,0002,0003,0000
    ```
 
 5. Reboot, and watch on the serial console (instance page → Console
    connection). Log in with `ssh narita`; if Tailscale didn't come
    back, use the public address, which `openToInternet` in `default.nix`
    keeps open for this.
-6. Afterwards: delete `/old-root`, set `openToInternet = false`, and remove
-   the scripted-initrd line from `modules/nixos/oracle-micro.nix`, then
-   update as described above.
+6. Afterwards: delete `/old-root` and Ubuntu's kernels in `/boot`, remove
+   the two conversion settings, and update as described above.
 
 Oracle may reclaim Always Free instances that stay idle for a week; one
 that runs something continuously, or an account upgraded to pay-as-you-go,
