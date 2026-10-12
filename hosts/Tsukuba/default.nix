@@ -96,7 +96,9 @@
   hardware.bluetooth.enable = true;
 
   # For apps installed without going through this config. Flathub has to be
-  # added once per machine, which the service below does.
+  # added once per machine, which the service below does. Wi-Fi is often
+  # not up yet when it runs at boot, so it does nothing once Flathub is
+  # there and otherwise retries every minute.
   services.flatpak.enable = true;
   systemd.services.flatpak-add-flathub = {
     description = "Add the Flathub repository to Flatpak";
@@ -104,9 +106,16 @@
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
     path = [ pkgs.flatpak ];
-    serviceConfig.Type = "oneshot";
+    serviceConfig = {
+      Type = "oneshot";
+      Restart = "on-failure";
+      RestartSec = "1min";
+    };
     script = ''
-      flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      if flatpak remotes --system --columns=name | grep -qx flathub; then
+        exit 0
+      fi
+      flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     '';
   };
 
