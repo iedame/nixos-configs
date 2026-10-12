@@ -103,6 +103,7 @@
             ./modules/nixos/nix-core.nix
             ./modules/nixos/locale.nix
             ./modules/nixos/fonts.nix
+            ./modules/nixos/heartbeat.nix
             ./modules/nixos/plasma.nix
             ./modules/nixos/ssh-server.nix
             ./modules/nixos/tailscale-services.nix
