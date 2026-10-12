@@ -243,6 +243,14 @@
   # Remote administration: Tailscale, and SSH reachable only through it
   # (modules/nixos/ssh-server.nix)
   services.tailscale.enable = true;
+
+  # Reports this host's health to an Uptime Kuma push monitor on one of the
+  # Oracle servers, which alerts when a unit fails here, a failed automatic
+  # update included. The laptop is often off, so the monitor's heartbeat
+  # interval is set to weeks: silence is normal, a failure is not
+  # (modules/nixos/heartbeat.nix; the push URL is in /etc/heartbeat-url on
+  # the machine, not in this repo)
+  custom.heartbeat.enable = true;
   custom.ssh-server.enable = true;
 
   # Updates itself from the public repo: once a week (or at the next start,

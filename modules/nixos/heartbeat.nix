@@ -12,11 +12,15 @@ in
   # notifies (by Telegram, say) in two cases: a systemd unit has failed
   # here, or the reports stop coming, because the host is down or cut off.
   #
-  # Every few minutes it calls the monitor's push URL with status "up", or
+  # Every minute it calls the monitor's push URL with status "up", or
   # "down" plus the names of the failed units. Whether silence counts as an
   # outage is the monitor's "heartbeat interval": a few minutes for a host
   # that is always on, weeks for one that is often switched off and should
   # only alert on failures.
+  #
+  # That interval has to be several times longer than the reporting
+  # interval here. If the two are equal, every report that arrives a moment
+  # late shows up as an outage followed at once by a recovery.
   #
   # The push URL is not in this repository: it contains the tailnet's name
   # and the monitor's token, and some hosts' systems are published. It is
@@ -35,8 +39,11 @@ in
     };
     interval = lib.mkOption {
       type = lib.types.str;
-      default = "5min";
-      description = "How often to report, as a systemd time span.";
+      default = "1min";
+      description = ''
+        How often to report, as a systemd time span. Keep it well below the
+        monitor's heartbeat interval.
+      '';
     };
   };
 
@@ -81,6 +88,9 @@ in
       timerConfig = {
         OnBootSec = "2min";
         OnUnitActiveSec = cfg.interval;
+        # The default of a minute would let reports drift by as much as
+        # they are apart
+        AccuracySec = "5s";
       };
     };
   };

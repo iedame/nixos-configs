@@ -27,6 +27,26 @@ ssh narita "sudo nix-store --realise $system > /dev/null && sudo nix-env -p /nix
 The first line only computes the system's store path (the same one CI
 built, also shown in the run's summary); nothing is built locally.
 
+## Health reports
+
+Every minute this host tells an Uptime Kuma "push" monitor whether it is
+healthy (`custom.heartbeat`, `modules/nixos/heartbeat.nix`). Uptime Kuma
+then sends a Telegram message if a systemd unit has failed here, or if the
+reports stop for longer than the monitor's heartbeat interval. Narita
+reports to the monitor named "Narita" on Nikko's Uptime Kuma, and Nikko to
+the one on Narita's, since a host can't announce its own outage. Their
+heartbeat interval is 300 seconds: five reports' worth, so a single late or
+lost report doesn't raise an alarm.
+
+The monitor's push URL contains the tailnet's name and a token, so it is
+not in this repository. It lives in `/etc/heartbeat-url` on the machine and
+has to be put back by hand after a reinstall. This prompts for it, stores
+it readable by root only, and sends a first report:
+
+```bash
+ssh -t narita 'read -rsp "Push URL: " u && echo && printf "%s\n" "$u" | sudo install -m 600 /dev/stdin /etc/heartbeat-url && sudo systemctl start heartbeat.service && journalctl -u heartbeat.service -n 3 --no-pager -o cat'
+```
+
 ## Installing
 
 This is how it was converted (about 15 minutes, 70 seconds of downtime). A
@@ -93,7 +113,8 @@ On the Ubuntu instance, with `system` set to the store path from above:
    back, use the public address, which `openToInternet` in `default.nix`
    keeps open for this.
 6. Afterwards: delete `/old-root` and Ubuntu's kernels in `/boot`, remove
-   the two conversion settings, and update as described above.
+   the two conversion settings, update as described above, and put the
+   push URL back (see Health reports).
 
 Oracle may reclaim Always Free instances that stay idle for a week; one
 that runs something continuously, or an account upgraded to pay-as-you-go,

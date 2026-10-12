@@ -73,6 +73,25 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 - **Passwords** are set on the machine with `passwd` and are not in this
   repository.
 
+## Health reports
+
+Every minute this host tells an Uptime Kuma "push" monitor whether it is
+healthy (`custom.heartbeat`, `modules/nixos/heartbeat.nix`). Uptime Kuma
+then sends a Telegram message if a systemd unit has failed here, or if the
+reports stop for longer than the monitor's heartbeat interval. This machine
+is often off, so that interval is set to weeks on its monitor: silence is
+normal, and the alert that matters is a failed unit, a failed automatic
+update included.
+
+The monitor's push URL contains the tailnet's name and a token, so it is
+not in this repository. It lives in `/etc/heartbeat-url` on the machine and
+has to be put back by hand after a reinstall. This prompts for it, stores
+it readable by root only, and sends a first report:
+
+```bash
+ssh -t tsukuba 'read -rsp "Push URL: " u && echo && printf "%s\n" "$u" | sudo install -m 600 /dev/stdin /etc/heartbeat-url && sudo systemctl start heartbeat.service && journalctl -u heartbeat.service -n 3 --no-pager -o cat'
+```
+
 ## Installing
 
 This is how it was installed (from Kawagoe, about 25 minutes). It erases the
