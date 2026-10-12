@@ -59,7 +59,7 @@ followed by `agenix -r` there.
 Uptime Kuma's monitors, notification settings and history exist only in
 its database. Every night around 03:30 a consistent copy of it is uploaded,
 encrypted, by restic to the private R2 bucket `oracle-nixos-backups`, in
-the folder `narita` (`custom.uptime-kuma-backup`,
+the folder `narita/uptime-kuma` (`custom.uptime-kuma-backup`,
 `modules/nixos/uptime-kuma-backup.nix`). Seven daily, four weekly and six
 monthly copies are kept. A failed backup shows up as a failed unit in the
 health reports above.
@@ -77,6 +77,17 @@ agenix -d shared/backup.env.age -i ~/.ssh/agenix
 ```bash
 ssh narita sudo restic-uptime-kuma snapshots          # list the copies
 ssh narita sudo systemctl start restic-backups-uptime-kuma   # back up now
+```
+
+Once a week (Sunday around 06:30) the newest copy is restored into a
+scratch folder and checked: it must be less than 48 hours old, the database
+must pass SQLite's integrity check and contain monitors, and every file in
+the repository is read back and verified. The test only reads; it changes
+neither the running Uptime Kuma nor the copies in the bucket. If it fails,
+the health reports above say so. To run it now:
+
+```bash
+ssh narita 'sudo systemctl start uptime-kuma-restore-test && journalctl -u uptime-kuma-restore-test -n 3 --no-pager -o cat'
 ```
 
 To restore the latest copy on the host:
