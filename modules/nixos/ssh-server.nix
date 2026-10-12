@@ -5,6 +5,7 @@
 }:
 let
   cfg = config.custom.ssh-server;
+  inventory = import ../../lib/hosts.nix;
 in
 {
   options.custom.ssh-server = {
@@ -20,8 +21,8 @@ in
   };
 
   # Port 22 is opened on tailscale0, not on the LAN or internet. Also
-  # generates the ed25519 host key that agenix decrypts with. Authorised
-  # keys are set per host (users.users.<name>.openssh.authorizedKeys.keys).
+  # generates the ed25519 host key that agenix decrypts with. The one key
+  # that may log in, and the account it logs in to, come from lib/hosts.nix.
   config = lib.mkIf cfg.enable {
     services.openssh = {
       enable = true;
@@ -38,6 +39,8 @@ in
         }
       ];
     };
+
+    users.users.${inventory.admin.user}.openssh.authorizedKeys.keys = [ inventory.admin.key ];
 
     networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 22 ];
     networking.firewall.allowedTCPPorts = lib.mkIf cfg.openToInternet [ 22 ];

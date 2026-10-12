@@ -7,7 +7,7 @@
 
 let
   # Aurora's Tailscale address; services bind here so they're tailnet-only
-  tailscaleIp = "100.110.116.3";
+  tailscaleIp = (import ../../lib/hosts.nix).hosts.Aurora.address;
   # Services behind Caddy live under this domain (wildcard ACME cert)
   domain = "ts.wildtonberries.com";
 in

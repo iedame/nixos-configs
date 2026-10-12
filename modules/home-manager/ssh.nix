@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.custom.ssh;
+  inventory = import ../../lib/hosts.nix;
 
   # 1Password's SSH agent socket (Settings > Developer > Use the SSH agent)
   onePasswordAgent =
@@ -17,30 +18,6 @@ in
 {
   options.custom.ssh = {
     enable = lib.mkEnableOption "SSH client configuration (1Password agent, host aliases)";
-    auroraAddress = lib.mkOption {
-      type = lib.types.str;
-      # Aurora's Tailscale IP: stable even if its Tailscale name changes
-      default = "100.110.116.3";
-      description = "Address for the `aurora` host alias";
-    };
-    tsukubaAddress = lib.mkOption {
-      type = lib.types.str;
-      # Tsukuba's Tailscale IP; its SSH server listens on Tailscale only
-      default = "100.115.41.1";
-      description = "Address for the `tsukuba` host alias";
-    };
-    naritaAddress = lib.mkOption {
-      type = lib.types.str;
-      # Narita's Tailscale IP, kept across its conversion from Ubuntu
-      default = "100.111.191.17";
-      description = "Address for the `narita` host alias";
-    };
-    nikkoAddress = lib.mkOption {
-      type = lib.types.str;
-      # Nikko's Tailscale IP, kept across its conversion from Ubuntu
-      default = "100.78.232.17";
-      description = "Address for the `nikko` host alias";
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -48,28 +25,21 @@ in
       enable = true;
       # Write only what's below, not home-manager's legacy defaults
       enableDefaultConfig = false;
-      settings = {
-        aurora = {
-          HostName = cfg.auroraAddress;
-          User = "haoji";
+      # `ssh aurora`, `ssh narita`, ...: one alias per host in lib/hosts.nix
+      settings =
+        lib.mapAttrs' (
+          name: host:
+          lib.nameValuePair (lib.toLower name) {
+            HostName = host.address;
+            User = inventory.admin.user;
+          }
+        ) inventory.hosts
+        // {
+          "*" = {
+            # Keys live in 1Password; the agent offers them and asks to approve
+            IdentityAgent = onePasswordAgent;
+          };
         };
-        tsukuba = {
-          HostName = cfg.tsukubaAddress;
-          User = "haoji";
-        };
-        narita = {
-          HostName = cfg.naritaAddress;
-          User = "haoji";
-        };
-        nikko = {
-          HostName = cfg.nikkoAddress;
-          User = "haoji";
-        };
-        "*" = {
-          # Keys live in 1Password; the agent offers them and asks to approve
-          IdentityAgent = onePasswordAgent;
-        };
-      };
     };
   };
 }

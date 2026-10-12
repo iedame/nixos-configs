@@ -111,10 +111,6 @@
     isNormalUser = true;
     description = "Rafael Ieda";
     extraGroups = [ "wheel" ];
-    # 1Password SSH key (SHA256:u9tymbo3…), the same one that signs commits
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIo2Gq92qOW6e/+8g8R0ob+LZvmrZ6DjUj3V48HYrK98"
-    ];
   };
   security.sudo.wheelNeedsPassword = false;
   # Lets haoji hand the daemon a system that is signed by the cache's key
