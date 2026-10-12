@@ -38,13 +38,12 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 
 ## Host-specific pieces
 
-- **Wi-Fi**: a Broadcom BCM4331, driven by the kernel's `b43` driver with
-  downloaded firmware (`networking.enableB43Firmware`, set by the hardware
-  profile). If it proves unreliable, the alternative is Broadcom's own
-  driver: `boot.kernelModules = [ "wl" ]`,
-  `boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ]`,
-  `networking.enableB43Firmware = false`, and the package allowed through
-  `custom.nix-core.permittedInsecurePackages`.
+- **Wi-Fi**: a Broadcom BCM4331, driven by Broadcom's own `wl` driver
+  (`broadcom_sta`). The hardware profile's choice, the kernel's `b43` with
+  downloaded firmware, works but has no 802.11n for this card and managed
+  14 Mbit/s. `wl` is unmaintained and marked insecure in nixpkgs, so
+  `default.nix` allows it by name. CI builds the module and uploads it to
+  the cache, so kernel updates don't compile it on the laptop.
 - **Apps**: Firefox, Chrome, OnlyOffice and VLC come from this config.
   Anything else can be installed from Discover through Flatpak, without
   administrator rights.
