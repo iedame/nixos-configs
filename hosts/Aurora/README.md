@@ -36,6 +36,24 @@ progress, package diff, then activation).
 - **Services**: reached as `<name>.ts.wildtonberries.com` through Caddy, on
   the Tailscale address set at the top of `default.nix`.
 
+## Health reports
+
+Every minute this host tells an Uptime Kuma "push" monitor whether it is
+healthy (`custom.heartbeat`, `modules/nixos/heartbeat.nix`). Uptime Kuma
+then sends a Telegram message if a systemd unit has failed here, or if the
+reports stop for longer than the monitor's heartbeat interval. This machine
+is often off, so that interval is set to weeks on its monitor: silence is
+normal, and the alert that matters is a failed unit.
+
+The monitor's push URL contains the tailnet's name and a token, so it is
+not in this repository. It lives in `/etc/heartbeat-url` on the machine and
+has to be put back by hand after a reinstall. This prompts for it, stores
+it readable by root only, and sends a first report:
+
+```bash
+ssh -t aurora 'read -rsp "Push URL: " u && echo && printf "%s\n" "$u" | sudo install -m 600 /dev/stdin /etc/heartbeat-url && sudo systemctl start heartbeat.service && journalctl -u heartbeat.service -n 3 --no-pager -o cat'
+```
+
 ## Secrets
 
 Three secrets are managed with agenix (`secrets.nix`; the encrypted files are
