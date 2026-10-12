@@ -60,6 +60,13 @@ jobs:
       # compiling again, kept short so the bucket stays small. The pull
       # request comment lists what else is built here, with licences, and
       # which of these entries no longer match anything.
+      #
+      # A package is only downloaded from a cache if everything it refers
+      # to can be had as well, so listing one that refers to an unlisted
+      # package achieves nothing. That is why nvidia-x11 is here despite
+      # its size (1.4 GB for every kernel or driver update): without it
+      # nvidia-settings can't be used either and both are built each time,
+      # after downloading NVIDIA's installer.
       CACHE_PACKAGES: >-
         [a-z_]+[.]traineddata
         asf-ui
@@ -70,6 +77,7 @@ jobs:
         egl-x11
         glibc-locales
         nvidia-settings
+        nvidia-x11
         paperless-ngx
         python3[.][0-9]+-ocrmypdf
         tesseract
