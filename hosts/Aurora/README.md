@@ -20,6 +20,7 @@ progress, package diff, then activation).
 | `desktop.nix` | Plasma, audio, printing, Flatpak, Bluetooth, desktop apps |
 | `graphics.nix` | NVIDIA driver and OpenGL |
 | `gaming.nix` | Steam, gamemode, ArchiSteamFarm, launchers and emulators |
+| `backup.nix` | Off-site Borg backups of the photo library, documents and home folders |
 | `services.nix` | Caddy + ACME, Immich, Forgejo, Jellyfin and the *arr apps, Paperless, Vaultwarden, linkding, Syncthing, Podman |
 | `ssh.nix` | SSH server (Tailscale only) |
 | `secrets.nix` | agenix secrets |
@@ -49,9 +50,55 @@ The monitor's push URL contains the tailnet's name and a token, so it is
 not in this repository: it is the agenix secret `aurora/heartbeat-url.age`
 (see below).
 
+## Backups
+
+Two Borg jobs run daily, or when the machine is next on (`backup.nix`).
+Each uploads, encrypted, to its own repository on a Hetzner Storage Box:
+
+| Job | What | Kept |
+|---|---|---|
+| `immich` | `/backup-pool/photos/immich` | 7 daily, 4 weekly, 6 monthly |
+| `home` | `/backup-pool/documents/haoji/onedrive` and the home folders listed in `backup.nix` | the same |
+
+They continue the repositories Pika Backup created, with the same archive
+prefixes, so the older archives are still there and are pruned by the same
+rule. A failed run shows up in the health reports above. Once a month each
+repository and its newest archive's index are checked for consistency;
+that doesn't read the data back.
+
+```bash
+sudo borg-job-immich list                  # archives
+sudo systemctl start borgbackup-job-immich # back up now
+journalctl -u borgbackup-job-immich -n 30  # what the last run did
+```
+
+To restore, mount an archive and copy out of it (`home` works the same):
+
+```bash
+sudo mkdir -p /mnt/borg && sudo borg-job-immich mount ::<archive> /mnt/borg
+# ... copy what is needed from /mnt/borg ...
+sudo borg-job-immich umount /mnt/borg
+```
+
+Everything about one backup carries the same name: the job `<name>` in
+`backup.nix`, the alias `borg-<name>` in the secret SSH configuration, and
+the secret `borg-<name>-passphrase`. To add one for another Storage Box
+sub-account:
+
+1. Give the sub-account the backup key (its public half is in a comment in
+   `backup.nix`), with Hetzner's `install-ssh-key` command.
+2. In the secrets repository, add a `Host borg-<name>` block with the
+   account's `HostName` and `User` to `aurora/borg-ssh-config.age`, and
+   create `aurora/borg-<name>-passphrase.age`.
+3. Declare that secret in `secrets.nix` and add the job to `backup.nix`.
+
+The storage box's account names, the SSH key it accepts and the
+repository passphrases are agenix secrets (below). Without a repository's
+passphrase its backup can't be read; both are also in 1Password.
+
 ## Secrets
 
-Five secrets are managed with agenix (`secrets.nix`; the encrypted files are
+Nine secrets are managed with agenix (`secrets.nix`; the encrypted files are
 in `aurora/` of the private secrets repo), decrypted at activation into
 `/run/agenix/`:
 
@@ -62,6 +109,8 @@ in `aurora/` of the private secrets repo), decrypted at activation into
 | `linkding.env` | linkding |
 | `heartbeat-url` | The health reports above |
 | `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
+| `borg-ssh-config`, `borg-ssh-key` | The backups: how to reach the storage box, and the key for it |
+| `borg-immich-passphrase`, `borg-home-passphrase` | The backups: each repository's passphrase |
 
 To confirm the services read them:
 

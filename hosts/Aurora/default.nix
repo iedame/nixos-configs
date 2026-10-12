@@ -10,6 +10,7 @@
     ./graphics.nix
     ./gaming.nix
     ./services.nix
+    ./backup.nix
   ];
 
   # Flakes, unfree, nixpkgs registry pin, weekly GC + store optimisation

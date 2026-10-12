@@ -24,6 +24,13 @@
       file = "${inputs.secrets}/aurora/cache-credentials.age";
       path = "/root/.aws/credentials";
     };
+    # Off-site backups (backup.nix): how to reach the storage box (an SSH
+    # configuration naming its accounts), the key it accepts, and each
+    # repository's passphrase
+    "borg-ssh-config".file = "${inputs.secrets}/aurora/borg-ssh-config.age";
+    "borg-ssh-key".file = "${inputs.secrets}/aurora/borg-ssh-key.age";
+    "borg-immich-passphrase".file = "${inputs.secrets}/aurora/borg-immich-passphrase.age";
+    "borg-home-passphrase".file = "${inputs.secrets}/aurora/borg-home-passphrase.age";
   };
 
   # agenix CLI, for editing the secrets (in a clone of the private repo)
