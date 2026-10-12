@@ -48,6 +48,12 @@ graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
 - **Keyboard**: physically a US (ANSI) one, so the layout is US
   International: keys type what they show, accents are dead keys.
 - **Battery**: dead, so none is detected; the laptop only runs plugged in.
+  Macs of this era then hold the CPU at its lowest speed; the
+  `disable-bd-prochot` service in `default.nix` lifts that at boot and
+  after sleep (798 MHz to about 2700 under load). If the laptop ever
+  switches off under heavy load, remove that service.
+- **CPU mitigations**: off (`mitigations=off`), a deliberate trade of
+  security for speed on a video-only machine.
 - **Browsing history**: neither Firefox nor Chrome records visited pages;
   logins, cookies and bookmarks are kept. Set by policy in `default.nix`,
   so it can't be switched back on in the browser.

@@ -33,6 +33,44 @@
   # speed all the time rather than ramping up on demand
   powerManagement.cpuFreqGovernor = "performance";
 
+  # Without a working battery this Mac's firmware holds the CPU at its
+  # lowest speed (798 MHz instead of up to 2900), by asserting the
+  # "BD PROCHOT" signal so the machine never draws more than the power
+  # adapter can deliver by itself. Bit 0 of MSR 0x1FC makes the CPU obey
+  # that signal; clearing it restores full speed (about 3.5x here). The
+  # CPU's own overheating protection is separate and stays on. The firmware
+  # sets the bit again at power-on and after sleep, hence a service for
+  # both. If the laptop ever switches off under heavy load, the adapter
+  # can't keep up and this has to go.
+  systemd.services.disable-bd-prochot = {
+    description = "Let the CPU run at full speed without a battery (clear BD PROCHOT)";
+    wantedBy = [
+      "multi-user.target"
+      "suspend.target"
+      "hibernate.target"
+    ];
+    after = [
+      "suspend.target"
+      "hibernate.target"
+    ];
+    path = [
+      pkgs.kmod
+      pkgs.msr-tools
+    ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      modprobe msr
+      value=$(rdmsr -c 0x1FC)
+      wrmsr -a 0x1FC $(( value & ~1 ))
+    '';
+  };
+
+  # CPU vulnerability mitigations off (Meltdown, Spectre and the like), for
+  # speed: they are expensive on a CPU this old, and this laptop is only
+  # used for watching videos. Remove this line if it is ever used for
+  # banking or anything else sensitive.
+  boot.kernelParams = [ "mitigations=off" ];
+
   # Compressed swap in RAM instead of a swap partition
   zramSwap.enable = true;
 
