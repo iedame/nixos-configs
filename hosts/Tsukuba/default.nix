@@ -62,9 +62,12 @@
   custom.fonts.enable = true;
 
   # KDE Plasma 6 with SDDM and PipeWire (modules/nixos/plasma.nix)
+  # The keyboard is physically a US one: US International types what the
+  # keys show and makes accents with dead keys (' then c gives ç)
   custom.plasma = {
     enable = true;
-    keyboardLayout = "br";
+    keyboardLayout = "us";
+    keyboardVariant = "intl";
   };
   # Same layout on the text console
   console.useXkbConfig = true;
@@ -119,10 +122,43 @@
     '';
   };
 
+  # Video playback. This GPU decodes H.264 but not the VP9 and AV1 that
+  # YouTube prefers, and the CPU can't keep up with those in software (a
+  # 1080p60 H.264 clip took 30 s of CPU time to decode in software, 0.3 s
+  # on the GPU). So both browsers are told to decode on the GPU and to ask
+  # for H.264: Firefox through preferences, Chrome through start-up flags
+  # and the h264ify extension.
   programs.firefox = {
     enable = true;
     languagePacks = [ "pt-BR" ];
+    preferences = {
+      "media.av1.enabled" = false;
+      "media.ffmpeg.vaapi.enabled" = true;
+      "media.hardware-video-decoding.force-enabled" = true;
+      "media.mediasource.vp9.enabled" = false;
+      # No browsing history (see below)
+      "places.history.enabled" = false;
+    };
+    policies.DisableFormHistory = true;
   };
+  # Only writes browser policies (which Chrome reads too); it doesn't
+  # install Chromium
+  programs.chromium = {
+    enable = true;
+    extensions = [ "aleakchihdccplidncghkekgioiakgal" ]; # h264ify
+    extraOpts.SavingBrowserHistoryDisabled = true;
+  };
+  # Neither browser keeps a history of visited pages (in Firefox, nor of
+  # what was typed into forms and the search bar). Logins, cookies and
+  # bookmarks are kept, so he stays signed in to sites.
+
+  nixpkgs.overlays = [
+    (final: prev: {
+      google-chrome = prev.google-chrome.override {
+        commandLineArgs = "--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL";
+      };
+    })
+  ];
 
   environment.systemPackages = with pkgs; [
     # keep-sorted start case=no
