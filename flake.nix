@@ -92,6 +92,7 @@
           modules = [
             self.nixosModules.default
             self.nixosModules.oracle-micro
+            inputs.agenix.nixosModules.default
             host
           ];
         };

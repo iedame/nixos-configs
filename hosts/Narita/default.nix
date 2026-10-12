@@ -1,6 +1,8 @@
-{ ... }:
+{ config, ... }:
 
 {
+  imports = [ ./secrets.nix ];
+
   # Everything about the machine itself is in modules/nixos/oracle-micro.nix
   networking.hostName = "Narita"; # Must match nixosConfigurations.Narita in flake.nix
 
@@ -28,9 +30,12 @@
   custom.tailscale-services."kuma-narita".target = "http://127.0.0.1:3001";
 
   # Reports this host's health to Nikko's Uptime Kuma, which alerts if a
-  # unit fails here or the reports stop (modules/nixos/heartbeat.nix; the
-  # push URL is in /etc/heartbeat-url on the machine, not in this repo)
-  custom.heartbeat.enable = true;
+  # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The
+  # monitor's push URL is an agenix secret (secrets.nix).
+  custom.heartbeat = {
+    enable = true;
+    urlFile = config.age.secrets."heartbeat-url".path;
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

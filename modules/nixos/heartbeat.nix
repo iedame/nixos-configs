@@ -23,8 +23,9 @@ in
   # late shows up as an outage followed at once by a recovery.
   #
   # The push URL is not in this repository: it contains the tailnet's name
-  # and the monitor's token, and some hosts' systems are published. It is
-  # read from a file put on the host by hand:
+  # and the monitor's token. It is read from a file: an agenix secret where
+  # the host has agenix (set urlFile to its path), or else one put on the
+  # host by hand:
   #
   #     echo 'https://<uptime-kuma>/api/push/<token>' | sudo tee /etc/heartbeat-url
   #     sudo chmod 600 /etc/heartbeat-url
