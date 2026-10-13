@@ -50,6 +50,19 @@ The monitor's push URL contains the tailnet's name and a token, so it is
 not in this repository: it is the agenix secret `aurora/heartbeat-url.age`
 (see below).
 
+## Drive health
+
+`custom.disk-health` (`modules/nixos/disk-health.nix`) runs smartd over all
+five drives and, every hour, a check that fails when a drive reports that
+it is failing, has an attribute past its failure threshold or a failed
+self-test, or when a ZFS pool isn't healthy. A failing check shows up in
+the health reports above.
+
+```bash
+sudo systemctl start disk-health; journalctl -u disk-health -n 10 --no-pager -o cat   # check now
+sudo smartctl -a /dev/sda                                                              # one drive in full
+```
+
 ## Backups
 
 Borg jobs run daily, or when the machine is next on (`backup.nix`). Each

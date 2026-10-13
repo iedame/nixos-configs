@@ -102,6 +102,7 @@
         default = {
           imports = [
             ./modules/nixos/nix-core.nix
+            ./modules/nixos/disk-health.nix
             ./modules/nixos/locale.nix
             ./modules/nixos/fonts.nix
             ./modules/nixos/heartbeat.nix
