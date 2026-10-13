@@ -96,6 +96,11 @@ A host without the file still works: Nix prints a warning and uses
 `cache.nixos.org` alone, which means compiling the missing packages itself
 (Narita and Nikko can't, and fail to update instead).
 
+## Recovery
+
+- [Aurora](docs/aurora-recovery.md): reinstalling after losing the system
+  disk, re-creating the pool, and restoring each service from the backups.
+
 ## Secrets
 
 Secrets are encrypted with [agenix](https://github.com/ryantm/agenix) and

@@ -70,6 +70,9 @@ sudo smartctl -a -d sat /dev/sdc                                                
 
 ## Backups
 
+What to do when a disk is lost, step by step: [the recovery
+handbook](../../docs/aurora-recovery.md).
+
 Borg jobs run daily, or when the machine is next on (`backup.nix`). Each
 uploads, encrypted, to a repository on a Hetzner Storage Box, one
 sub-account per repository, and keeps 7 daily, 4 weekly and 6 monthly
