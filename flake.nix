@@ -125,6 +125,7 @@
         imports = [
           ./modules/darwin/nix-core.nix
           ./modules/darwin/fonts.nix
+          ./modules/darwin/heartbeat.nix
         ];
       };
 
