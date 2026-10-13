@@ -336,14 +336,14 @@ never an older one. Photos uploaded after a dump was made are on the disk
 but unknown to the database.
 
 Rehearsed in part on 2026-10-13 with a second Postgres in a scratch folder,
-using one of Immich's own dumps (the other kind didn't exist yet, and its
-commands above are untried): the newest dump (328 MB, from two days
-earlier) loaded in 31 seconds with only those three errors, and had the
-same numbers of photos, users and albums as the live database. 25 photos
-picked from the restored database were then extracted from the archive, and
-every one matched the checksum Immich had recorded for it. Not tried:
-starting Immich on the restored database, and restoring the whole photo
-folder.
+once with each kind of dump. The Postgres dump from that evening's archive
+(866 MB) was extracted in under a minute and loaded in 31 seconds with only
+those three errors; Immich's own newest dump (328 MB, two days old) did the
+same. Both gave the same numbers of photos, users and albums as the live
+database. Each time, 25 photos picked from the restored database were then
+extracted from the archive, and every one matched the checksum Immich had
+recorded for it. Not tried: starting Immich on the restored database, and
+restoring the whole photo folder.
 
 ## What is not backed up
 
