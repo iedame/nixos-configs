@@ -135,12 +135,17 @@ in
     };
   };
 
-  # A native dump of Forgejo's database, which is the one its
-  # documentation recommends relying on for a restore. No timer: the
-  # backup job starts it (backup.nix). Immich dumps its own database.
+  # Native dumps of the databases of Forgejo and Immich. Forgejo's
+  # documentation recommends relying on this one for a restore. Immich also
+  # dumps its own database into its media folder, but only when this
+  # machine is on at the time set in Immich, so those can be days old. No
+  # timer: the backup jobs start the dumps (backup.nix).
   services.postgresqlBackup = {
     enable = true;
-    databases = [ "forgejo" ];
+    databases = [
+      "forgejo"
+      "immich"
+    ];
     startAt = [ ];
     compression = "none";
   };

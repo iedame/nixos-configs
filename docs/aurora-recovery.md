@@ -5,9 +5,10 @@ What to do when Aurora loses a disk, or all of them. Written 2026-10-13.
 **Most of this procedure has not been rehearsed.** The backups it relies on
 run every night and their repositories are checked monthly, but apart from
 reading the archives back, only the [Vaultwarden](#vaultwarden),
-[Paperless](#paperless) and [Forgejo](#forgejo) restores have been tried,
-and those into scratch folders. Treat the other commands as the plan, and
-correct this file after the first real use.
+[Paperless](#paperless) and [Forgejo](#forgejo) restores and a part of
+[Immich's](#immichs-database) have been tried, and those into scratch
+folders. Treat the other commands as the plan, and correct this file after
+the first real use.
 
 ## What is where
 
@@ -27,7 +28,7 @@ each (`hosts/Aurora/backup.nix`):
 
 | Repository | Jobs | Restores |
 |---|---|---|
-| `immich` | `immich` | `/backup-pool/photos/immich`: photos, videos and Immich's own database dumps |
+| `immich` | `immich` | `/backup-pool/photos/immich` (photos, videos and Immich's own database dumps) and `/var/backup/postgresql/immich.sql`, a dump of its database made just before each backup |
 | `home` | `home` | `/backup-pool/documents` and the home folders listed in `backup.nix` |
 | `services` | `vaultwarden`, `paperless`, `forgejo` | Each service's own export of its data |
 
@@ -296,22 +297,53 @@ service, and opening a document in the restored copy.
 
 ### Immich's database
 
-Immich writes dumps of its database into
-`/backup-pool/photos/immich/backups`, so the newest one is either still on
-the pool or comes back with the `immich` restore. Restoring one replaces
-the whole database. Follow "Backup and restore" in Immich's documentation
-for the installed version; in outline:
+There are two kinds of dump, and the first is the one to use:
+
+- `var/backup/postgresql/immich.sql` in the `immich` archive: made by
+  Postgres just before each backup, so it matches the photos in the same
+  archive. It re-creates the `immich` database itself.
+- Immich's own dumps in `/backup-pool/photos/immich/backups`
+  (`immich-db-backup-<time>-v<version>-pg<version>.sql.gz`). Immich only
+  makes one when Aurora is on at the time set in Immich, so the newest can
+  be days older than the photos. They hold the database's contents only and
+  need an existing, empty `immich` database to load into.
+
+Either replaces the whole database, and needs the `immich` database user
+to exist; on a reinstalled Aurora the NixOS module has created it. Check
+the steps against "Backup and restore" in Immich's documentation for the
+installed version. With the first kind:
 
 ```bash
 sudo systemctl stop immich-server immich-machine-learning
-gunzip --stdout /backup-pool/photos/immich/backups/<newest>.sql.gz \
+sudo -u postgres dropdb --if-exists immich
+sudo cat /root/restore/var/backup/postgresql/immich.sql \
   | sed "s/SELECT pg_catalog.set_config('search_path', '', false);/SELECT pg_catalog.set_config('search_path', 'public, pg_catalog', true);/g" \
   | sudo -u postgres psql --dbname=postgres
 sudo systemctl start immich-server immich-machine-learning
 ```
 
-A dump is tied to the Immich version in its file name. Restore it into
-that version or a newer one, never an older one.
+With one of Immich's own dumps, create the database first
+(`sudo -u postgres createdb --owner=immich immich`), then use
+`gunzip --stdout <dump>.sql.gz` in place of `sudo cat ...` and
+`--dbname=immich` in place of `--dbname=postgres`.
+
+Three errors about an extension called `vectors` are expected: the
+database still lists that old extension, which Postgres here no longer
+ships, and Immich now uses `vchord`. Any other error is a real one.
+
+Restore a dump into the Immich version it was made with or a newer one,
+never an older one. Photos uploaded after a dump was made are on the disk
+but unknown to the database.
+
+Rehearsed in part on 2026-10-13 with a second Postgres in a scratch folder,
+using one of Immich's own dumps (the other kind didn't exist yet, and its
+commands above are untried): the newest dump (328 MB, from two days
+earlier) loaded in 31 seconds with only those three errors, and had the
+same numbers of photos, users and albums as the live database. 25 photos
+picked from the restored database were then extracted from the archive, and
+every one matched the checksum Immich had recorded for it. Not tried:
+starting Immich on the restored database, and restoring the whole photo
+folder.
 
 ## What is not backed up
 

@@ -76,8 +76,13 @@ in
         prefix = "14d8a7";
       }
       // {
-        paths = [ "/backup-pool/photos/immich" ];
-        preHook = poolMounted;
+        # The photos, and a dump of Immich's database made just before
+        # (services.nix): one without the other can't be restored
+        paths = [
+          "/backup-pool/photos/immich"
+          "${config.services.postgresqlBackup.location}/immich.sql"
+        ];
+        preHook = poolMounted + refresh "postgresqlBackup-immich.service";
       };
 
     # Documents and the home folders worth keeping
@@ -147,7 +152,7 @@ in
       // {
         paths = [
           config.services.forgejo.dump.backupDir
-          config.services.postgresqlBackup.location
+          "${config.services.postgresqlBackup.location}/forgejo.sql"
         ];
         preHook = refresh "forgejo-dump.service postgresqlBackup-forgejo.service";
       };
@@ -163,11 +168,10 @@ in
   # archive's index. It doesn't read the backed-up data back: that would
   # mean downloading all of it.
   #
-  # One file is read back, though: Immich's database. Immich writes dumps
-  # of it into its media folder, which is how the database gets into the
-  # backup at all, and unlike a photo a damaged dump can't be noticed by
-  # looking. The newest dump in the newest archive is downloaded and its
-  # compression verified end to end.
+  # One file is read back, though: the dump of Immich's database. Unlike a
+  # photo, a damaged or cut-off dump can't be noticed by looking. The one
+  # in the newest archive is downloaded and checked to end with the line
+  # pg_dump writes last.
   systemd.services.borgbackup-check = {
     description = "Check the Borg repositories";
     wants = [ "network-online.target" ];
@@ -175,7 +179,6 @@ in
     path = [
       pkgs.coreutils
       pkgs.gnugrep
-      pkgs.gzip
     ];
     serviceConfig.Type = "oneshot";
     script =
@@ -186,14 +189,13 @@ in
         set -o pipefail
         borg=/run/current-system/sw/bin/borg-job-immich
         archive=$($borg list --lock-wait 3600 --last 1 --format '{archive}{NL}')
-        dump=$($borg list --lock-wait 3600 --format '{path}{NL}' "::$archive" backup-pool/photos/immich/backups \
-          | grep '\.sql\.gz$' | sort | tail -n 1 || true)
-        if [ -z "$dump" ]; then
-          echo "archive $archive holds no Immich database dump"
+        dump=${lib.removePrefix "/" config.services.postgresqlBackup.location}/immich.sql
+        if ! $borg extract --lock-wait 3600 --stdout "::$archive" "$dump" \
+          | tail -n 5 | grep -q 'PostgreSQL database dump complete'; then
+          echo "archive $archive holds no complete dump of Immich's database ($dump)"
           exit 1
         fi
-        $borg extract --lock-wait 3600 --stdout "::$archive" "$dump" | gzip --test
-        echo "Immich database dump intact: $dump in $archive"
+        echo "Immich database dump complete: $dump in $archive"
       '';
   };
   systemd.timers.borgbackup-check = {
