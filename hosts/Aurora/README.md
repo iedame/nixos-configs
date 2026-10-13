@@ -63,8 +63,9 @@ archives:
 | `home` | `/backup-pool/documents` (except Paperless's files) and the home folders listed in `backup.nix` | `home` |
 | `vaultwarden` | The copy Vaultwarden's own backup job makes of its database, attachments and keys | `services` |
 | `paperless` | Paperless's export of every document with its metadata | `services` |
+| `forgejo` | Forgejo's dump of the repositories, LFS files, attachments and settings, and a Postgres dump of its database | `services` |
 
-The last two make that copy fresh before each run; Paperless is stopped
+The last three make that copy fresh before each run; Paperless is stopped
 for the moment its export takes.
 
 `immich` and `home` continue the repositories Pika Backup created, with

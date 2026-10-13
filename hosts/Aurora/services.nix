@@ -123,6 +123,26 @@ in
         DEFAULT_ACTIONS_URL = "github";
       };
     };
+    # Forgejo's own dump of the repositories, LFS files, attachments and
+    # settings, for the off-site backup (backup.nix), which also starts it
+    # before each run. An uncompressed archive, so that the backup can
+    # tell what changed since the previous one; dumps older than two days
+    # are removed from this disk.
+    dump = {
+      enable = true;
+      type = "tar";
+      age = "2d";
+    };
+  };
+
+  # A native dump of Forgejo's database, which is the one its
+  # documentation recommends relying on for a restore. No timer: the
+  # backup job starts it (backup.nix). Immich dumps its own database.
+  services.postgresqlBackup = {
+    enable = true;
+    databases = [ "forgejo" ];
+    startAt = [ ];
+    compression = "none";
   };
 
   services.jellyfin = {
