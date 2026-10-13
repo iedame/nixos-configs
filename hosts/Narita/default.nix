@@ -1,7 +1,10 @@
 { config, ... }:
 
 {
-  imports = [ ./secrets.nix ];
+  imports = [
+    ./secrets.nix
+    ./nixkeeper-start-runs.nix
+  ];
 
   # Everything about the machine itself is in modules/nixos/oracle-micro.nix
   networking.hostName = "Narita"; # Must match nixosConfigurations.Narita in flake.nix

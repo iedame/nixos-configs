@@ -72,9 +72,12 @@
     agents = [
       "org.nix-community.home.linkding"
       "org.nix-community.home.linkding-background-tasks"
-      "org.nixos.nixkeeper-start-runs"
     ];
   };
+
+  # nixkeeper's runs are started from Narita. Set this to true to do it
+  # from here while that server is down (nixkeeper-start-runs.nix).
+  custom.nixkeeper-start-runs.enable = false;
 
   # Compiling Linux Binaries
   nix.linux-builder.enable = false;

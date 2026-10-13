@@ -200,15 +200,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1791729553,
-        "narHash": "sha256-FG0t7W68uv3TkhfrTwypgY+6R+Q9mD59ndtCxmr7LNw=",
-        "owner": "iedame",
+        "lastModified": 1791891393,
+        "narHash": "sha256-yqXmXST0Hq/YWkb/Q8OywWgVJNJtz23TBFef3LbKQHY=",
+        "owner": "nixkeeper",
         "repo": "nixkeeper",
-        "rev": "05f1edd8bd3d7576eb8f98bb8c3731d58ec05a2d",
+        "rev": "4ada6ec72b02cc2ac6b04fa27876aadde76a7974",
         "type": "github"
       },
       "original": {
-        "owner": "iedame",
+        "owner": "nixkeeper",
         "repo": "nixkeeper",
         "type": "github"
       }
@@ -269,11 +269,11 @@
     "secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1791858476,
-        "narHash": "sha256-QPAsYt3siQ3/Di39UsWyKod2Na37IFZFi5NBEe+WRcQ=",
+        "lastModified": 1791894050,
+        "narHash": "sha256-XN73WZ3Addt99ZHzRyDxeZQUc37trqdUvcOPmplSMTI=",
         "ref": "refs/heads/main",
-        "rev": "e3796056162bda711a0912bd8709db6c8e58dcca",
-        "revCount": 10,
+        "rev": "05db948250a72d2d3bfa1e398f1b9624e216807b",
+        "revCount": 11,
         "type": "git",
         "url": "ssh://git@github.com/iedame/nixos-secrets.git"
       },
