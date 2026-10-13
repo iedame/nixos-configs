@@ -164,6 +164,9 @@ in
             ExtensionSettings."uBlock0@raymondhill.net" = {
               installation_mode = "force_installed";
               install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+              # Its button goes on the toolbar; Firefox otherwise hides a new
+              # extension in the Extensions menu
+              default_area = "navbar";
             };
           };
         };
