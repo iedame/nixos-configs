@@ -48,7 +48,6 @@
     keepassxc
     onlyoffice-desktopeditors
     openrgb
-    pika-backup
     planify
     pomodoro-gtk
     proton-authenticator

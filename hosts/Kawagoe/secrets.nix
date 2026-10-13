@@ -15,6 +15,10 @@
     owner = "haoji";
   };
 
+  # Push URL of this Mac's monitor in Uptime Kuma (custom.heartbeat,
+  # default.nix); read by a root launchd job
+  age.secrets."heartbeat-url".file = "${inputs.secrets}/kawagoe/heartbeat-url.age";
+
   # agenix CLI for editing the secrets in ~/.config/nixos-secrets (identity:
   # ~/.ssh/agenix)
   environment.systemPackages = [
