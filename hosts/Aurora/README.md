@@ -60,8 +60,12 @@ archives:
 | Job | What | Repository |
 |---|---|---|
 | `immich` | `/backup-pool/photos/immich` | `immich` |
-| `home` | `/backup-pool/documents/haoji/onedrive` and the home folders listed in `backup.nix` | `home` |
-| `vaultwarden` | The copy Vaultwarden's own backup job makes every evening | `services` |
+| `home` | `/backup-pool/documents` (except Paperless's files) and the home folders listed in `backup.nix` | `home` |
+| `vaultwarden` | The copy Vaultwarden's own backup job makes of its database, attachments and keys | `services` |
+| `paperless` | Paperless's export of every document with its metadata | `services` |
+
+The last two make that copy fresh before each run; Paperless is stopped
+for the moment its export takes.
 
 `immich` and `home` continue the repositories Pika Backup created, with
 the same archive prefixes, so the older archives are still there and are

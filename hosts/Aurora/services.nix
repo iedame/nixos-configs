@@ -161,6 +161,14 @@ in
     settings = {
       PAPERLESS_OCR_LANGUAGE = "por+eng";
     };
+    # Paperless's own export: every document with its metadata, in a form
+    # a fresh install can import again. No timer: the backup job starts it
+    # before each run (backup.nix), so the export is never older than the
+    # backup.
+    exporter = {
+      enable = true;
+      onCalendar = null;
+    };
   };
 
   services.vaultwarden = {

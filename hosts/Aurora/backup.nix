@@ -56,6 +56,11 @@ let
     ${pkgs.util-linux}/bin/mountpoint --quiet /backup-pool/photos
     ${pkgs.util-linux}/bin/mountpoint --quiet /backup-pool/documents
   '';
+
+  # For the jobs that back up a copy a service makes of its own data: make
+  # that copy now, and wait for it, so the backup is never older than the
+  # machine's last evening on
+  refresh = unit: "${config.systemd.package}/bin/systemctl start --wait ${unit}";
 in
 {
   # Daily, encrypted, off-site backups with Borg. A failed run leaves a
@@ -84,7 +89,7 @@ in
       // {
         preHook = poolMounted;
         paths = [
-          "/backup-pool/documents/haoji/onedrive"
+          "/backup-pool/documents"
         ]
         ++ map (folder: "/home/haoji/${folder}") [
           "Containers"
@@ -98,14 +103,16 @@ in
         exclude = [
           "*/.cache"
           "*/.Trash-*"
+          # Paperless's files are backed up through its export instead
+          # (the paperless job)
+          "/backup-pool/documents/paperless"
         ];
       };
 
     # The small services share the "services" repository, one job each.
     #
     # Vaultwarden: the consistent copy of its database, attachments and
-    # keys that its own backup job makes every evening (services.nix,
-    # backupDir)
+    # keys that its own backup job makes (services.nix, backupDir)
     vaultwarden =
       job {
         repo = "services";
@@ -113,10 +120,27 @@ in
       }
       // {
         paths = [ config.services.vaultwarden.backupDir ];
+        preHook = refresh "backup-vaultwarden.service";
         # The first job of a new repository creates it
         doInit = true;
       };
+
+    # Paperless: its export of all documents and their metadata
+    # (services.nix, exporter). Paperless is stopped while that runs.
+    paperless =
+      job {
+        repo = "services";
+        prefix = "paperless";
+      }
+      // {
+        paths = [ config.services.paperless.exporter.directory ];
+        preHook = refresh "paperless-exporter.service";
+      };
   };
+
+  # The vaultwarden job is the one that creates the shared repository, so
+  # the others using it go after it when they start together
+  systemd.services.borgbackup-job-paperless.after = [ "borgbackup-job-vaultwarden.service" ];
 
   # Once a month, a consistency check of each repository (done on the
   # storage box itself, so nothing is downloaded) and of its newest
