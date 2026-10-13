@@ -10,8 +10,8 @@ home-manager. Layout inspired by
 |---|---|---|
 | [Aurora](hosts/Aurora/README.md) | NixOS, x86_64-linux | Desktop, gaming, home server (Immich, Jellyfin, Forgejo, Vaultwarden, …) |
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
-| [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (2011 MacBook Pro), updates itself from this repo |
-| [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (2013 Retina MacBook Pro), the same set-up as Tsukuba |
+| [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), updates itself from this repo |
+| [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), the same set-up as Tsukuba |
 | [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring, Tailscale exit node |
 | [Nikko](hosts/Nikko/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring, Tailscale exit node |
 
