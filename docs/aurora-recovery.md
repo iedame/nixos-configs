@@ -4,9 +4,10 @@ What to do when Aurora loses a disk, or all of them. Written 2026-10-13.
 
 **Most of this procedure has not been rehearsed.** The backups it relies on
 run every night and their repositories are checked monthly, but apart from
-reading the archives back, only the [Vaultwarden](#vaultwarden) restore has
-been tried, and that one into a scratch folder. Treat the other commands as
-the plan, and correct this file after the first real use.
+reading the archives back, only the [Vaultwarden](#vaultwarden),
+[Paperless](#paperless) and [Forgejo](#forgejo) restores have been tried,
+and those into scratch folders. Treat the other commands as the plan, and
+correct this file after the first real use.
 
 ## What is where
 
@@ -230,16 +231,20 @@ the files and answered. Not tried: the copy over the real
 The archive holds two things: `var/lib/forgejo/dump/forgejo-dump-<time>.tar`
 (repositories, LFS files, attachments, settings) and
 `var/backup/postgresql/forgejo.sql` (the database, dumped by Postgres).
-Use the newest tar.
+Use the newest tar. Inside it are `repos`, `data`, `custom`, `app.ini` and
+Forgejo's own copy of the database (`forgejo-db.sql`, not used here).
 
 ```bash
 sudo systemctl stop forgejo
-mkdir /root/restore/dump && sudo tar -xf /root/restore/var/lib/forgejo/dump/forgejo-dump-<time>.tar -C /root/restore/dump
+sudo mkdir /root/restore/dump && sudo tar -xf /root/restore/var/lib/forgejo/dump/forgejo-dump-<time>.tar -C /root/restore/dump
 ```
 
 Put the `repos` folder from the dump at `/var/lib/forgejo/repositories` and
-the `data` folder at `/var/lib/forgejo/data`, owned by `forgejo`. Replace
-the database with the native dump, which re-creates it:
+the `data` folder at `/var/lib/forgejo/data`. Leave the dump's `app.ini`
+where it is: the NixOS module writes Forgejo's settings itself at every
+start. Replace the database with the native dump, which re-creates it; the
+`forgejo` database user it refers to has to exist already, and on a
+reinstalled Aurora the NixOS module has created it:
 
 ```bash
 sudo -u postgres dropdb --if-exists forgejo
@@ -248,18 +253,46 @@ sudo chown -R forgejo:forgejo /var/lib/forgejo
 sudo systemctl start forgejo
 ```
 
-Forgejo's documentation ("Upgrade guide / backup and restore") has the
-details of the dump's layout; check it against the Forgejo version
-installed, since this part is the least certain in this file.
+`postgres` can't read `/root`; if `psql` says so, feed it the file instead
+(`sudo cat <file> | sudo -u postgres psql`). The mirrors catch up with
+their sources by themselves at the next sync.
+
+Rehearsed on 2026-10-13 with a second Postgres and a second Forgejo in a
+scratch folder, sandboxed away from the real ones: the newest archive was
+extracted (about a minute, 221 MB), all 12 repositories passed `git fsck`,
+the database dump loaded into an empty Postgres in 4 seconds with the same
+numbers of repositories, users and releases as the live one, and Forgejo
+started on the restored database and repositories, reported itself healthy
+and served its login page. Not tried: the copy into the real
+`/var/lib/forgejo`, logging in, and cloning a repository from the restored
+copy.
 
 ### Paperless
 
 The archive holds Paperless's export: every document plus a manifest with
-its metadata. Import it into a running, empty Paperless:
+its metadata. Import it into a running, empty Paperless. The import runs
+as the `paperless` user, which can't read `/root`, so this one is extracted
+somewhere else:
 
 ```bash
-sudo paperless-manage document_importer /root/restore/var/lib/paperless/export
+sudo mkdir -p /var/tmp/restore && cd /var/tmp/restore && sudo borg-job-paperless extract ::<archive>
+sudo chown -R paperless:paperless /var/tmp/restore
+sudo paperless-manage document_importer /var/tmp/restore/var/lib/paperless/export
+sudo rm -rf /var/tmp/restore
 ```
+
+"Running" matters: Paperless needs its Redis even to create its database,
+and the import ends by rebuilding the search index in
+`/var/lib/paperless/index`, a folder the service creates. The login
+accounts come back (whether their passwords still work wasn't tried).
+Paperless's internal `consumer` account isn't in the export.
+
+Rehearsed on 2026-10-13 with a second Paperless in a scratch folder (its
+own empty database, media folder and Redis): the newest archive was
+extracted (12 seconds, 2 MB) and imported in 3 seconds, all 6 documents
+came back with originals byte-identical to the live ones, and Paperless's
+sanity checker found no issues. Not tried: the import into the real
+service, and opening a document in the restored copy.
 
 ### Immich's database
 
