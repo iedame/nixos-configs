@@ -53,7 +53,8 @@ not in this repository: it is the agenix secret `aurora/heartbeat-url.age`
 ## Drive health
 
 `custom.disk-health` (`modules/nixos/disk-health.nix`) runs smartd over the
-drives and, every hour, a check that fails when a drive reports that it is
+drives, which also has each one run a short self-test daily at 14:00, and,
+every hour, a check that fails when a drive reports that it is
 failing, has an attribute past its failure threshold or a failed self-test,
 or when a ZFS pool isn't healthy. A failing check shows up in the health
 reports above.

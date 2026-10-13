@@ -71,12 +71,14 @@ in
   # Watches the drives, so that a failing one is noticed before it takes
   # data with it.
   #
-  # smartd keeps an eye on every drive's SMART data and writes changes to
-  # the journal. On its own that tells nobody, so a check runs every hour
-  # and asks each drive directly; it fails, and with it shows up in the
-  # heartbeat (heartbeat.nix), when a drive reports that it is failing, has
-  # an attribute past its failure threshold, or has a failed self-test. On
-  # a host with ZFS it also fails when a pool is anything but healthy.
+  # smartd keeps an eye on every drive's SMART data, writes changes to the
+  # journal and has each drive run a short self-test once a day, in which
+  # the drive examines itself. On its own that tells nobody, so a check
+  # runs every hour and asks each drive directly; it fails, and with it
+  # shows up in the heartbeat (heartbeat.nix), when a drive reports that it
+  # is failing, has an attribute past its failure threshold, or has a
+  # failed self-test. On a host with ZFS it also fails when a pool is
+  # anything but healthy.
   #
   # A drive that can't be asked is mentioned in the log and otherwise
   # ignored: some USB enclosures don't pass SMART through at all, and
@@ -96,10 +98,28 @@ in
       default = "hourly";
       description = "How often to check, as a systemd calendar expression.";
     };
+    selfTestHour = lib.mkOption {
+      type = lib.types.ints.between 0 23;
+      default = 14;
+      description = ''
+        Hour of the day at which smartd starts the daily short self-test:
+        one the machine is normally on at.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    services.smartd.enable = true;
+    services.smartd = {
+      enable = true;
+      # For every drive smartd finds: watch all attributes, keep the
+      # drive's own offline data collection on, start a short self-test
+      # every day at selfTestHour, and leave a spun-down drive asleep when
+      # polling it (without logging each skip). The check below fails on
+      # a self-test that found errors.
+      defaults.autodetected = "-a -o on -s S/../.././${
+        lib.fixedWidthString 2 "0" (toString cfg.selfTestHour)
+      } -n standby,q";
+    };
 
     systemd.services.disk-health = service false;
     systemd.services.disk-health-full = service true;
