@@ -27,7 +27,8 @@
       mineffect = "scale";
       # Hidden apps (Cmd-H) get a translucent icon
       showhidden = true;
-      # Hot corner, top left: Lock Screen (1 = disabled, 13 = Lock Screen)
+      # Hot corner, top left: Lock Screen (1 = disabled, 13 = Lock Screen).
+      # It only fires while Option is held: see wvous-tl-modifier below.
       wvous-tl-corner = 13;
       # Pinned apps, left to right. Apps not listed here get unpinned on the
       # next switch, so add new ones here rather than by dragging.
@@ -48,7 +49,6 @@
         "/System/Applications/Notes.app"
         "/Users/haoji/Applications/Home Manager Apps/Alacritty.app"
         "/Applications/Claude.app"
-        "/Applications/Antigravity.app"
         "/Applications/Nix Apps/BBEdit.app"
         "/Applications/Nix Apps/Element.app"
         "/Applications/Telegram.app"
@@ -121,6 +121,11 @@
         "com.apple.scrollwheel.scaling" = 1.7;
         AppleMiniaturizeOnDoubleClick = false;
       };
+      # The top-left hot corner locks the screen only while this key is
+      # held, so brushing the corner with the pointer doesn't. nix-darwin
+      # has no option for it. Shift = 131072, Control = 262144,
+      # Option = 524288, Command = 1048576; 0 = no key needed.
+      "com.apple.dock"."wvous-tl-modifier" = 524288;
       # Don't litter network shares and USB drives with .DS_Store files
       "com.apple.desktopservices" = {
         DSDontWriteNetworkStores = true;
