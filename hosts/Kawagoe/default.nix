@@ -19,7 +19,6 @@
     appcleaner
     bbedit
     coreutils
-    daisydisk
     element-desktop
     gh
     ghostscript
