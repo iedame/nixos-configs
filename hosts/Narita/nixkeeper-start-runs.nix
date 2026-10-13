@@ -37,6 +37,8 @@
       # this host's time zone is a whole number of hours away from it
       OnCalendar = "*:15";
       AccuracySec = "10s";
+      # A start missed while the server was off runs at boot
+      Persistent = true;
     };
   };
 }
