@@ -17,8 +17,8 @@ in
   # the reports stop coming or one says something is wrong.
   #
   # macOS has no list of failed services to consult, so "healthy" here
-  # means: each launchd job named in `daemons` and `agents` is loaded and
-  # didn't end in an error the last time it ran. The agents belong to
+  # means: each launchd job named in `daemons` and `agents` is loaded, and
+  # is either running or didn't end in an error the last time it ran. The agents belong to
   # system.primaryUser and only exist while that user is logged in, so
   # after a restart they count as failed until the login.
   #
@@ -60,6 +60,7 @@ in
       path = [
         pkgs.coreutils
         pkgs.curl
+        pkgs.gnugrep
         pkgs.gnused
         "/bin"
         "/usr/bin"
@@ -77,8 +78,14 @@ in
             failed="$failed ''${target##*/}(not-loaded)"
             continue
           fi
-          # "0", another number, or "(never exited)" for one still on its
-          # first run
+          # A job that is running now is healthy, whatever an earlier
+          # attempt ended with: one that failed at login and was restarted
+          # keeps reporting that first exit code for as long as it runs
+          if printf '%s\n' "$state" | grep -q '^[[:space:]]*state = running$'; then
+            continue
+          fi
+          # "0", another number, or "(never exited)" for one that has never
+          # run
           code=$(printf '%s\n' "$state" | sed -n 's/^[[:space:]]*last exit code = \(-\{0,1\}[0-9][0-9]*\).*/\1/p' | head -n 1)
           if [ -n "$code" ] && [ "$code" != 0 ]; then
             failed="$failed ''${target##*/}"
