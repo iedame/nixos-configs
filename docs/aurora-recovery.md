@@ -2,11 +2,11 @@
 
 What to do when Aurora loses a disk, or all of them. Written 2026-10-13.
 
-**This procedure has not been rehearsed.** The backups it relies on run
-every night and their repositories are checked monthly, but apart from
-reading the archives back, none of the restores below has been carried out
-on Aurora. Treat the commands as the plan, and correct this file after the
-first real use.
+**Most of this procedure has not been rehearsed.** The backups it relies on
+run every night and their repositories are checked monthly, but apart from
+reading the archives back, only the [Vaultwarden](#vaultwarden) restore has
+been tried, and that one into a scratch folder. Treat the other commands as
+the plan, and correct this file after the first real use.
 
 ## What is where
 
@@ -217,6 +217,13 @@ sudo rm -f /var/lib/vaultwarden/db.sqlite3-wal /var/lib/vaultwarden/db.sqlite3-s
 sudo chown -R vaultwarden:vaultwarden /var/lib/vaultwarden
 sudo systemctl start vaultwarden
 ```
+
+Rehearsed on 2026-10-13, up to the copy: the newest archive was extracted
+(10 seconds, under 1 MB), its database passed SQLite's integrity check and
+had the same number of users, entries and attachments as the live one, the
+RSA key was identical, and a second Vaultwarden started on a scratch copy of
+the files and answered. Not tried: the copy over the real
+`/var/lib/vaultwarden`, and logging in to the restored copy.
 
 ### Forgejo
 
