@@ -27,10 +27,16 @@ update stops working.
 
 | File | What's in it |
 |---|---|
-| `default.nix` | Boot, locale, Plasma, apps, Flatpak, Tailscale and SSH, automatic updates |
-| `users.nix` | `yuki` (everyday use, no administrator rights) and `haoji` (administration) |
+| `default.nix` | What is specific to this laptop: name, Wi-Fi driver, the dead battery, keyboard |
 | `disko.nix` | Disk layout, applied at install time |
 | `hardware-configuration.nix` | Generated hardware settings |
+
+Everything else, the desktop, the browsers, automatic login, the two
+accounts (`yuki` for everyday use without administrator rights, `haoji` for
+administration), Flatpak and the automatic updates, is in
+`modules/nixos/family-laptop.nix`, which this laptop shares with
+[Kawaguchiko](../Kawaguchiko/README.md). "`default.nix`" below means that
+module unless the setting is one of the few in this folder.
 
 The model-specific settings (Wi-Fi firmware, fan control, Sandy Bridge
 graphics, SSD) come from the `apple-macbook-pro-8-1` profile of
@@ -102,7 +108,7 @@ laptop's disk, so copy the home directory somewhere first.
    for the installer's user with `passwd`, and note the address shown by
    `ip a`.
 2. Add an SSH key to the installer session, for step 4 (`key.pub` holds the
-   public key authorised in `users.nix`):
+   admin public key from `lib/hosts.nix`):
 
    ```bash
    ssh-copy-id -f -i key.pub -o IdentityAgent=none nixos@<address>

@@ -10,7 +10,8 @@ home-manager. Layout inspired by
 |---|---|---|
 | [Aurora](hosts/Aurora/README.md) | NixOS, x86_64-linux | Desktop, gaming, home server (Immich, Jellyfin, Forgejo, Vaultwarden, …) |
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
-| [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (2011 MacBook Pro), updates itself from this repo |
+| [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), updates itself from this repo |
+| [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), the same set-up as Tsukuba |
 | [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring, Tailscale exit node |
 | [Nikko](hosts/Nikko/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring, Tailscale exit node |
 
@@ -35,7 +36,8 @@ on what they need, e.g. `custom.nix-core.enable = true;`.
 ## Usage
 
 Rebuild the current machine (Aurora and Kawagoe define this alias, which runs
-`nh`; Tsukuba updates itself weekly, and Narita and Nikko after every merge):
+`nh`; Tsukuba and Kawaguchiko update themselves weekly, and Narita and Nikko
+after every merge):
 
 ```bash
 update
@@ -63,8 +65,8 @@ Actions PR.
 
 CI builds every host on each pull request and uploads what
 `cache.nixos.org` doesn't have to a private Cloudflare R2 bucket: a short
-list of packages for Aurora and Tsukuba, the whole system for Narita and
-Nikko, which can't build their own (`.github/workflows/ci.yml`). The NixOS
+list of packages for Aurora and the family laptops, the whole system for
+Narita and Nikko, which can't build their own (`.github/workflows/ci.yml`). The NixOS
 hosts download from it with `custom.nix-core.ciCache.enable`
 (`modules/nixos/nix-core.nix`).
 
@@ -73,7 +75,7 @@ token for it (Cloudflare dashboard, R2, "Manage API tokens": Object Read
 only, limited to this bucket), in root's AWS credentials file. On Aurora,
 Narita and Nikko that file is an agenix secret (`cache-credentials.age` in
 `aurora/` and `shared/`; see [Secrets](#secrets)), so changing the token is
-an edit there. It is placed by hand on Tsukuba, and once on a newly
+an edit there. It is placed by hand on Tsukuba and Kawaguchiko, and once on a newly
 installed Narita or Nikko, which needs it to download its first system:
 
 ```bash
@@ -140,6 +142,6 @@ What this means in practice:
   `SECRETS_DEPLOY_KEY`).
 
 If you're not me, the config won't evaluate as is: remove the `secrets` input
-and the `age.secrets` declarations, or point them at your own. Tsukuba is the
-exception: it uses no secrets, because it updates itself from this public
-repository.
+and the `age.secrets` declarations, or point them at your own. Tsukuba and
+Kawaguchiko are the exception: they use no secrets, because they update
+themselves from this public repository.

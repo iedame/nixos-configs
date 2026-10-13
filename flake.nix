@@ -103,6 +103,7 @@
           imports = [
             ./modules/nixos/nix-core.nix
             ./modules/nixos/disk-health.nix
+            ./modules/nixos/family-laptop.nix
             ./modules/nixos/locale.nix
             ./modules/nixos/fonts.nix
             ./modules/nixos/heartbeat.nix
@@ -192,6 +193,20 @@
           ./hosts/Tsukuba
           inputs.disko.nixosModules.disko
           inputs.nixos-hardware.nixosModules.apple-macbook-pro-8-1
+        ];
+      };
+
+      # The same kind of laptop as Tsukuba, a 2013 model
+      nixosConfigurations.Kawaguchiko = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit inputs;
+        };
+        modules = [
+          self.nixosModules.default
+          ./hosts/Kawaguchiko
+          inputs.disko.nixosModules.disko
+          inputs.nixos-hardware.nixosModules.apple-macbook-pro-11-1
         ];
       };
 

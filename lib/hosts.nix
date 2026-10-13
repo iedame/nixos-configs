@@ -28,6 +28,10 @@
       address = "100.110.116.3";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICsrX+QjUTslwb3hJQxDMgFElXbUt1qv+jGsDCwnFhlL";
     };
+    Kawaguchiko = {
+      address = "100.118.90.64";
+      hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINozjjMQunxp6OHJBBVFtS6IkHiZSd/WeHzke+dF9ims";
+    };
     Narita = {
       address = "100.111.191.17";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPep0HwSN8SjvyY5MVuHh3rLOzFbYE9l2goJjmPJmeFo";
