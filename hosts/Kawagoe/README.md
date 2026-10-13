@@ -19,16 +19,20 @@ package diff, then activation). The Mac's hostname is set to `Kawagoe`
   for a nixpkgs PR on GitHub Actions (`iedame/nixpkgs-review-gha`).
 - **Health reports** (`custom.heartbeat`, `modules/darwin/heartbeat.nix`): a
   root launchd job tells an Uptime Kuma "push" monitor every minute whether
-  this Mac is healthy, meaning that linkding's two agents and the nixkeeper
-  agent are loaded and didn't last end in an error. Uptime Kuma sends a
+  this Mac is healthy, meaning that linkding's two agents are loaded and
+  didn't last end in an error. Uptime Kuma sends a
   Telegram message if a report says otherwise or the reports stop. The
   agents only exist while `haoji` is logged in, so after a restart the
   monitor stays red until the login. The push URL is the agenix secret
   `kawagoe/heartbeat-url.age`. Log (only when the monitor can't be reached):
   `/var/log/heartbeat.log`.
-- **nixkeeper start-runs** (`nixkeeper-start-runs.nix`): user launchd agent that
-  starts nixkeeper's runs through the GitHub API every hour at :15. Its token is
-  the Keychain item `nixkeeper-start-runs`. Log:
+- **nixkeeper start-runs** (`nixkeeper-start-runs.nix`), switched off:
+  Narita starts nixkeeper's runs through the GitHub API every hour. To do
+  it from here while Narita is down, set
+  `custom.nixkeeper-start-runs.enable = true` in `default.nix` and rebuild;
+  that adds a user launchd agent (hourly at :15) and has the health reports
+  watch it. Its token is the Keychain item `nixkeeper-start-runs`, which
+  has to be one valid for the `nixkeeper` organisation's repositories. Log:
   `~/Library/Logs/nixkeeper-start-runs.log`.
 - **linkding** (`custom.linkding`, `modules/home-manager/darwin/linkding.nix`, part of the darwin-only `homeModules.darwin`):
   the bookmark manager as two user launchd agents, the web server on

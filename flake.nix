@@ -43,7 +43,7 @@
       flake = false;
     };
 
-    nixkeeper.url = "github:iedame/nixkeeper";
+    nixkeeper.url = "github:nixkeeper/nixkeeper";
     nixkeeper.inputs.nixpkgs.follows = "nixpkgs";
     nixkeeper.inputs.nix-darwin.follows = "nix-darwin";
     nixkeeper.inputs.treefmt-nix.follows = "treefmt-nix";

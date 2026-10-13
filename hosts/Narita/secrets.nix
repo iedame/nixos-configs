@@ -18,5 +18,8 @@
       file = "${inputs.secrets}/shared/cache-credentials.age";
       path = "/root/.aws/credentials";
     };
+    # GitHub token that may only start and cancel workflow runs in the
+    # nixkeeper repositories (nixkeeper-start-runs.nix)
+    "nixkeeper-start-runs-token".file = "${inputs.secrets}/narita/nixkeeper-start-runs-token.age";
   };
 }

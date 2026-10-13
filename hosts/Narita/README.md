@@ -45,6 +45,19 @@ ssh narita "sudo nix-store --realise $system > /dev/null && sudo nix-env -p /nix
 The first line only computes the system's store path (the same one CI
 built, also shown in the run's summary); nothing is built locally.
 
+## nixkeeper's runs
+
+Every hour at :15 a timer starts nixkeeper's GitHub Actions runs through
+GitHub's API (`nixkeeper-start-runs.nix`), because GitHub's own schedule
+skips runs when it is busy and this host is always on. Its token, a
+fine-grained one that can only start and cancel runs in the nixkeeper
+repositories, is the agenix secret `narita/nixkeeper-start-runs-token.age`.
+
+```bash
+ssh narita 'journalctl -u nixkeeper-start-runs -n 12 --no-pager -o cat'   # what the last run started
+ssh narita sudo systemctl start nixkeeper-start-runs                      # start them now
+```
+
 ## Health reports
 
 Every minute this host tells an Uptime Kuma "push" monitor whether it is
