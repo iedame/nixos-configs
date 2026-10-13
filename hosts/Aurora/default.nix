@@ -35,6 +35,11 @@
   # ZFS Automatic scrubbing
   services.zfs.autoScrub.enable = true;
 
+  # SMART monitoring of all five drives, plus an hourly check that fails,
+  # and so shows up in the health reports below, when a drive or a pool is
+  # in trouble (modules/nixos/disk-health.nix)
+  custom.disk-health.enable = true;
+
   # Automatically import ZFS pools on boot
   boot.zfs.extraPools = [
     "backup-pool"
