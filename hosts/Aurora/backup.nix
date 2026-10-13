@@ -60,7 +60,7 @@ let
   # For the jobs that back up a copy a service makes of its own data: make
   # that copy now, and wait for it, so the backup is never older than the
   # machine's last evening on
-  refresh = unit: "${config.systemd.package}/bin/systemctl start --wait ${unit}";
+  refresh = units: "${config.systemd.package}/bin/systemctl start --wait ${units}";
 in
 {
   # Daily, encrypted, off-site backups with Borg. A failed run leaves a
@@ -136,11 +136,27 @@ in
         paths = [ config.services.paperless.exporter.directory ];
         preHook = refresh "paperless-exporter.service";
       };
+
+    # Forgejo: its dump of the repositories, LFS files, attachments and
+    # settings, and a native dump of its database (services.nix)
+    forgejo =
+      job {
+        repo = "services";
+        prefix = "forgejo";
+      }
+      // {
+        paths = [
+          config.services.forgejo.dump.backupDir
+          config.services.postgresqlBackup.location
+        ];
+        preHook = refresh "forgejo-dump.service postgresqlBackup-forgejo.service";
+      };
   };
 
   # The vaultwarden job is the one that creates the shared repository, so
   # the others using it go after it when they start together
   systemd.services.borgbackup-job-paperless.after = [ "borgbackup-job-vaultwarden.service" ];
+  systemd.services.borgbackup-job-forgejo.after = [ "borgbackup-job-vaultwarden.service" ];
 
   # Once a month, a consistency check of each repository (done on the
   # storage box itself, so nothing is downloaded) and of its newest
