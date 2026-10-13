@@ -80,14 +80,15 @@ archives:
 
 | Job | What | Repository |
 |---|---|---|
-| `immich` | `/backup-pool/photos/immich` | `immich` |
+| `immich` | `/backup-pool/photos/immich` and a Postgres dump of Immich's database | `immich` |
 | `home` | `/backup-pool/documents` (except Paperless's files) and the home folders listed in `backup.nix` | `home` |
 | `vaultwarden` | The copy Vaultwarden's own backup job makes of its database, attachments and keys | `services` |
 | `paperless` | Paperless's export of every document with its metadata | `services` |
 | `forgejo` | Forgejo's dump of the repositories, LFS files, attachments and settings, and a Postgres dump of its database | `services` |
 
-The last three make that copy fresh before each run; Paperless is stopped
-for the moment its export takes.
+The last three make that copy fresh before each run, and so does `immich`
+for its database dump; Paperless is stopped for the moment its export
+takes.
 
 `immich` and `home` continue the repositories Pika Backup created, with
 the same archive prefixes, so the older archives are still there and are
@@ -95,10 +96,9 @@ pruned by the same rule. The small services share the `services`
 repository, one job each with its own archive prefix; a service that
 outgrows it can be pointed at a repository of its own. A failed run shows up in the health reports above. Once a month each
 repository and its newest archive's index are checked for consistency.
-That doesn't read the data back, with one exception: the newest dump of
-Immich's database (Immich writes them into its media folder, so they are
-part of the `immich` backup) is downloaded and verified. To run the check
-now:
+That doesn't read the data back, with one exception: the dump of Immich's
+database in the newest archive is downloaded and checked to be complete. To
+run the check now:
 
 ```bash
 sudo systemctl start borgbackup-check && journalctl -u borgbackup-check -n 5 --no-pager -o cat
