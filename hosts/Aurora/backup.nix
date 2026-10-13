@@ -170,8 +170,8 @@ in
   #
   # One file is read back, though: the dump of Immich's database. Unlike a
   # photo, a damaged or cut-off dump can't be noticed by looking. The one
-  # in the newest archive is downloaded and checked to end with the line
-  # pg_dump writes last.
+  # in the newest archive is downloaded and checked to end with pg_dump's
+  # closing comment (a few lines from the end: a marker line follows it).
   systemd.services.borgbackup-check = {
     description = "Check the Borg repositories";
     wants = [ "network-online.target" ];
@@ -191,7 +191,7 @@ in
         archive=$($borg list --lock-wait 3600 --last 1 --format '{archive}{NL}')
         dump=${lib.removePrefix "/" config.services.postgresqlBackup.location}/immich.sql
         if ! $borg extract --lock-wait 3600 --stdout "::$archive" "$dump" \
-          | tail -n 5 | grep -q 'PostgreSQL database dump complete'; then
+          | tail -n 20 | grep -q 'PostgreSQL database dump complete'; then
           echo "archive $archive holds no complete dump of Immich's database ($dump)"
           exit 1
         fi
