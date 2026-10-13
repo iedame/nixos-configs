@@ -31,11 +31,23 @@ let
   # Start of every script below: stop on the first error, load the
   # environment (and the optional secrets file), then move into the data
   # directory.
+  #
+  # The secrets file may not exist yet when the agents start: at login
+  # right after a boot they can be ahead of whatever puts it there (agenix
+  # decrypts a minute or so into the boot). Without the wait the first
+  # start fails and launchd restarts it, which works but leaves the agent
+  # showing a failed exit for as long as it runs.
   setup = ''
     set -eu
     set -a
     . ${envFile}
-    ${lib.optionalString (cfg.environmentFile != null) ". ${lib.escapeShellArg cfg.environmentFile}"}
+    ${lib.optionalString (cfg.environmentFile != null) ''
+      for _ in $(seq 120); do
+        [ -r ${lib.escapeShellArg cfg.environmentFile} ] && break
+        sleep 1
+      done
+      . ${lib.escapeShellArg cfg.environmentFile}
+    ''}
     set +a
     export PYTHONPATH=${lib.escapeShellArg pythonPath}
     mkdir -p ${lib.escapeShellArg cfg.dataDir}/{favicons,previews,assets}
