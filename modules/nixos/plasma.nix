@@ -31,6 +31,18 @@ in
     # Enable the KDE Plasma Desktop Environment.
     services.displayManager.sddm.enable = true;
     services.desktopManager.plasma6.enable = true;
+    # Without KDE's mail, contacts and calendar suite (KMail, Kontact,
+    # Merkuro and the rest), which Plasma installs by default and none of
+    # these machines uses. Its Akonadi backend would otherwise run a
+    # database server in every session.
+    programs.kde-pim.enable = false;
+    # No file indexing (Baloo) either: none of these machines searches file
+    # contents from the launcher or Dolphin. This is the default for every
+    # user; a setting changed in System Settings takes precedence.
+    environment.etc."xdg/baloofilerc".text = ''
+      [Basic Settings]
+      Indexing-Enabled=false
+    '';
 
     # Configure keymap in X11
     services.xserver.xkb = {

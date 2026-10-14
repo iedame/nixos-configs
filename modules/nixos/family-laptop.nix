@@ -77,16 +77,11 @@ in
         # Same layout on the text console
         console.useXkbConfig = true;
 
-        # Lighter desktop for an old dual-core: no KDE mail and calendar suite
-        # (Plasma installs it by default, and its Akonadi backend runs a database
-        # server in every session), no file indexing, and no animations, so
-        # windows and menus appear at once. The two files are Plasma's defaults
-        # for every user; a setting changed in System Settings takes precedence.
-        programs.kde-pim.enable = false;
-        environment.etc."xdg/baloofilerc".text = ''
-          [Basic Settings]
-          Indexing-Enabled=false
-        '';
+        # Lighter desktop for an old dual-core: no animations, so windows and
+        # menus appear at once (KDE's mail suite and file indexing are already
+        # left out for every Plasma machine, modules/nixos/plasma.nix). This is
+        # Plasma's default for every user; a setting changed in System Settings
+        # takes precedence.
         environment.etc."xdg/kdeglobals".text = ''
           [KDE]
           AnimationDurationFactor=0
@@ -116,29 +111,10 @@ in
 
         hardware.bluetooth.enable = true;
 
-        # For apps installed without going through this config. Flathub has to be
-        # added once per machine, which the service below does. Wi-Fi is often
-        # not up yet when it runs at boot, so it does nothing once Flathub is
-        # there and otherwise retries every minute.
-        services.flatpak.enable = true;
-        systemd.services.flatpak-add-flathub = {
-          description = "Add the Flathub repository to Flatpak";
-          wantedBy = [ "multi-user.target" ];
-          wants = [ "network-online.target" ];
-          after = [ "network-online.target" ];
-          path = [ pkgs.flatpak ];
-          serviceConfig = {
-            Type = "oneshot";
-            Restart = "on-failure";
-            RestartSec = "1min";
-          };
-          script = ''
-            if flatpak remotes --system --columns=name | grep -qx flathub; then
-              exit 0
-            fi
-            flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          '';
-        };
+        # For apps installed without going through this config, from Discover:
+        # Flathub, and weekly updates of what is installed from it
+        # (modules/nixos/flatpak.nix)
+        custom.flatpak.enable = true;
 
         # Video playback. This GPU decodes H.264 but not the VP9 and AV1 that
         # YouTube prefers, and the CPU can't keep up with those in software (a

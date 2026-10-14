@@ -7,8 +7,8 @@
   # Enable CUPS to print documents.
   services.printing.enable = true;
 
-  # Enable Flatpak
-  services.flatpak.enable = true;
+  # Flatpak with Flathub, updated weekly (modules/nixos/flatpak.nix)
+  custom.flatpak.enable = true;
 
   services.hardware.openrgb.enable = true;
 
