@@ -104,6 +104,28 @@ run the check now:
 sudo systemctl start borgbackup-check && journalctl -u borgbackup-check -n 5 --no-pager -o cat
 ```
 
+Also once a month, four of the five backups are restored into a scratch
+folder and looked at (`borgbackup-restore-test-<job>`, in
+`backup.nix`), because an archive can pass the check above and still hold
+something useless:
+
+| Test | Passes when |
+|---|---|
+| `vaultwarden` | The database passes SQLite's integrity check and holds an account, and the RSA key is there |
+| `paperless` | Every document in the export's manifest is there and matches the checksum recorded for it |
+| `forgejo` | Every repository passes `git fsck`, and the database dump loads into an empty Postgres |
+| `immich` | The database dump loads into an empty Postgres, and 25 photos picked at random from it are in the archive with the checksum Immich recorded for them |
+
+They fail, and show up in the health reports, only on such a hard fault;
+they don't start the services on the restored data, and write nothing
+outside their scratch folder. `home` has no test: it holds plain files with
+nothing to check them against. All four take about four minutes together.
+To run one now:
+
+```bash
+sudo systemctl start borgbackup-restore-test-immich && journalctl -u borgbackup-restore-test-immich -n 3 --no-pager -o cat
+```
+
 ```bash
 sudo borg-job-immich list                  # archives
 sudo systemctl start borgbackup-job-immich # back up now
@@ -134,6 +156,75 @@ another Storage Box sub-account:
 The storage box's account names, the SSH key it accepts and the
 repository passphrases are agenix secrets (below). Without a repository's
 passphrase its backup can't be read; both are also in 1Password.
+
+## Postgres after a glibc update
+
+Postgres sorts text by the rules of the system's C library (glibc) and
+stores its text indexes in that order. Each database records the glibc
+version it was last indexed under. When a NixOS update brings a newer
+glibc, every connection prints
+
+```
+WARNING:  database "immich" has a collation version mismatch
+```
+
+because the old indexes might no longer be in the right order. Nothing is
+broken by the update itself, and the backups aren't affected (a dump holds
+no index order), but the warning stays until each database's indexes are
+rebuilt and the new version recorded. It shows up in the logs of the
+database dumps the backups make.
+
+A daily check (`postgres-collation-check`, `services.nix`) fails while any
+database is behind, so it arrives as a failed unit in the
+[health reports](#health-reports), within a day of the update or ten
+minutes after the next boot.
+
+To see the glibc version each database was last indexed under, next to the
+system's (this changes nothing):
+
+```bash
+sudo postgres-refresh-collation
+```
+
+```
+database | indexed under glibc | system glibc | state
+forgejo | 2.44 | 2.44 | ok
+immich | 2.44 | 2.44 | ok
+template0 | none | 2.44 | never warns
+...
+```
+
+To fix the ones marked `BEHIND`:
+
+```bash
+sudo postgres-refresh-collation --fix
+```
+
+It makes fresh dumps of Forgejo's and Immich's databases, then takes one
+database at a time, smallest first: stops the services that use it,
+rebuilds its indexes, records the new version and starts the services
+again. It ends by running the check, which clears the alert. Forgejo and
+Immich are each down for well under a minute.
+
+The command (`services.nix`) knows which services use which database from
+the `databaseServices` list above it. A database that isn't in that list is
+skipped and the check keeps failing: add it to the list, with its services,
+and rebuild.
+
+By hand, the same thing for one database is:
+
+```bash
+sudo systemctl stop forgejo
+sudo -u postgres psql -d forgejo -c 'REINDEX DATABASE forgejo' -c 'REINDEX SYSTEM forgejo' -c 'ALTER DATABASE forgejo REFRESH COLLATION VERSION'
+sudo systemctl start forgejo
+sudo systemctl start postgres-collation-check
+```
+
+Don't run the `ALTER DATABASE` step alone: it silences the warning without
+rebuilding anything.
+
+Last done on 2026-10-13, for glibc 2.40 to 2.44: 3 seconds for `forgejo`,
+18 for `immich`, a second for each of the rest.
 
 ## Secrets
 

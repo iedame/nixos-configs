@@ -10,6 +10,13 @@ reading the archives back, only the [Vaultwarden](#vaultwarden),
 folders. Treat the other commands as the plan, and correct this file after
 the first real use.
 
+What is tested without anyone asking: once a month Aurora restores the
+newest Vaultwarden, Paperless and Forgejo archives, and Immich's database
+with a sample of photos, into a scratch folder, and checks them (see
+"Backups" in [Aurora's README](../hosts/Aurora/README.md)). That shows the
+archives hold complete, undamaged copies. It doesn't replace the steps
+below, which put such a copy back in service.
+
 ## What is where
 
 | Disk | Holds | If it dies |
