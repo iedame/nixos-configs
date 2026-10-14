@@ -12,7 +12,13 @@ Nobody runs `update` here. Once a week (or at the next start, if it was off)
 a running session. A change reaches the laptop by being merged; CI builds
 this host on every pull request first.
 
-- State of the last run: `systemctl status nixos-upgrade`
+The apps installed from Discover (Flatpaks) are updated separately, also
+weekly and by themselves (`modules/nixos/flatpak.nix`); an open app gets
+its new version the next time it is started. Discover's update notifier is
+switched off, since there is nothing left for anyone to click.
+
+- State of the last run: `systemctl status nixos-upgrade`, and for the
+  Flatpaks `systemctl status flatpak-update`
 - Apply something right away, over Tailscale:
   `ssh tsukuba` (an alias from `modules/home-manager/ssh.nix`), then
   `sudo nixos-rebuild switch --flake github:iedame/nixos-configs#Tsukuba --refresh`

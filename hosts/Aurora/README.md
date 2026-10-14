@@ -17,7 +17,7 @@ progress, package diff, then activation).
 |---|---|
 | `default.nix` | Imports, boot, ZFS, networking, shared modules, command-line tools |
 | `users.nix` | The `haoji` account, system zsh, YubiKey (`pam_u2f`) login and sudo |
-| `desktop.nix` | Plasma, audio, printing, Flatpak, Bluetooth, desktop apps |
+| `desktop.nix` | Plasma, audio, printing, Flatpak (updated weekly, `modules/nixos/flatpak.nix`), Bluetooth, desktop apps |
 | `graphics.nix` | NVIDIA driver and OpenGL |
 | `gaming.nix` | Steam, gamemode, ArchiSteamFarm, launchers and emulators |
 | `backup.nix` | Off-site Borg backups of the photo library, documents and home folders |

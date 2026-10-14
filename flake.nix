@@ -104,6 +104,7 @@
             ./modules/nixos/nix-core.nix
             ./modules/nixos/disk-health.nix
             ./modules/nixos/family-laptop.nix
+            ./modules/nixos/flatpak.nix
             ./modules/nixos/locale.nix
             ./modules/nixos/fonts.nix
             ./modules/nixos/heartbeat.nix
