@@ -17,6 +17,11 @@
 
   # Mac mini: come back on its own after a power cut
   power.restartAfterPowerFailure = true;
+  # and never sleep: it runs linkding and reports to Uptime Kuma every
+  # minute (default.nix), and asleep it does neither. macOS otherwise puts
+  # it to sleep a minute after the display turns off, and the missing
+  # reports look like a failure. The display still turns off.
+  power.sleep.computer = "never";
 
   # macOS application firewall (per-app incoming connections), captured from
   # System Settings > Network > Firewall, plus stealth mode
