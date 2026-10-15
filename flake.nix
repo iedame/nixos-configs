@@ -82,16 +82,18 @@
         }
       );
 
-      oracleMicro =
-        host:
+      # An Oracle Cloud host: `shape` is the module describing its machine
+      # (nixosModules.oracle-micro or nixosModules.oracle-a1), which also
+      # sets its platform
+      oracle =
+        shape: host:
         inputs.nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
           specialArgs = {
             inherit inputs;
           };
           modules = [
             self.nixosModules.default
-            self.nixosModules.oracle-micro
+            shape
             inputs.agenix.nixosModules.default
             host
           ];
@@ -120,8 +122,10 @@
         # as a NixOS module
         runescape = ./modules/nixos/runescape.nix;
 
-        # Oracle Cloud micro instances; describes their hardware and disk
+        # Oracle Cloud instances, by shape; each describes its hardware and
+        # disk (and imports oracle.nix, what they share)
         oracle-micro = ./modules/nixos/oracle-micro.nix;
+        oracle-a1 = ./modules/nixos/oracle-a1.nix;
       };
 
       darwinModules.default = {
@@ -212,8 +216,10 @@
       };
 
       # Oracle Cloud Always Free micro instances
-      nixosConfigurations.Narita = oracleMicro ./hosts/Narita;
-      nixosConfigurations.Nikko = oracleMicro ./hosts/Nikko;
+      nixosConfigurations.Narita = oracle self.nixosModules.oracle-micro ./hosts/Narita;
+      nixosConfigurations.Nikko = oracle self.nixosModules.oracle-micro ./hosts/Nikko;
+      # Oracle Cloud Always Free Ampere A1 instance
+      nixosConfigurations.Ginza = oracle self.nixosModules.oracle-a1 ./hosts/Ginza;
 
       darwinConfigurations.Kawagoe = inputs.nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";

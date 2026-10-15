@@ -4,8 +4,8 @@ name: CI
 # flake-update PRs: does the flake still evaluate and stay formatted, do the
 # hosts still build, and which packages change.
 #
-# Runs again on master after a merge, which is what deploys Narita and
-# Nikko: their systems are built and uploaded once more from the merged
+# Runs again on master after a merge, which is what deploys Narita, Nikko
+# and Ginza: their systems are built and uploaded once more from the merged
 # tree, and then published for the hosts to pick up (the last step of the
 # build job).
 on:
@@ -110,6 +110,13 @@ jobs:
             os: ubuntu-latest
             attr: nixosConfigurations.Nikko.config.system.build.toplevel
             cache_all: true
+          # The Oracle Arm instance: built on GitHub's Arm runner, and like
+          # the micro instances downloads its system from the cache (it
+          # can't evaluate its configuration without the secrets repo)
+          - host: Ginza
+            os: ubuntu-24.04-arm
+            attr: nixosConfigurations.Ginza.config.system.build.toplevel
+            cache_all: true
           - host: Kawagoe
             os: macos-latest
             attr: darwinConfigurations.Kawagoe.system
@@ -118,9 +125,10 @@ jobs:
         uses: actions/checkout@v7
 
       # Aurora's system is far bigger than the runner's free disk; this
-      # removes preinstalled software and gives the space to /nix.
+      # removes preinstalled software and gives the space to /nix. Not on the
+      # Arm runner: Ginza's system fits as it is.
       - name: Free disk space
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && runner.arch == 'X64'
         uses: wimpysworld/nothing-but-nix@v10
         with:
           hatchet-protocol: rampage
