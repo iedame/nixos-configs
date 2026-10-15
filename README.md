@@ -14,7 +14,7 @@ home-manager. Layout inspired by
 | [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), the same set-up as Tsukuba |
 | [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring, Tailscale exit node |
 | [Nikko](hosts/Nikko/README.md) | NixOS, x86_64-linux | Oracle Cloud Always Free micro instance: uptime monitoring, Tailscale exit node |
-| [Ginza](hosts/Ginza/README.md) | NixOS, aarch64-linux | Oracle Cloud Always Free Ampere A1 instance: linkding, the tailnet's DNS with ad blocking |
+| [Ginza](hosts/Ginza/README.md) | NixOS, aarch64-linux | Oracle Cloud Always Free Ampere A1 instance: linkding |
 
 ## Layout
 
