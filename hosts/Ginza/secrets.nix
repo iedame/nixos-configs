@@ -9,6 +9,9 @@
     "heartbeat-url".file = "${inputs.secrets}/ginza/heartbeat-url.age";
     # linkding's environment: the settings that name the tailnet
     "linkding.env".file = "${inputs.secrets}/ginza/linkding.env.age";
+    # R2 token and encryption password for the backup of linkding; the same
+    # file as Narita's and Nikko's backups of Uptime Kuma
+    "backup.env".file = "${inputs.secrets}/shared/backup.env.age";
     # Read-only R2 token for the binary cache, linked to where Nix looks
     # for it. A newly installed host needs the file placed by hand once, to
     # download its first system (see "Binary cache" in the top-level

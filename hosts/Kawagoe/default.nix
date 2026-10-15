@@ -62,16 +62,12 @@
   nix.settings.sandbox = "relaxed";
 
   # Reports this Mac's health to an Uptime Kuma push monitor on one of the
-  # Oracle servers, which alerts if the reports stop or one of these
-  # background jobs ended in an error (modules/darwin/heartbeat.nix). The
+  # Oracle servers, which alerts if the reports stop or a background job it
+  # is told to watch ended in an error (modules/darwin/heartbeat.nix). The
   # monitor's push URL is an agenix secret (secrets.nix).
   custom.heartbeat = {
     enable = true;
     urlFile = config.age.secrets."heartbeat-url".path;
-    agents = [
-      "org.nix-community.home.linkding"
-      "org.nix-community.home.linkding-background-tasks"
-    ];
   };
 
   # nixkeeper's runs are started from Narita. Set this to true to do it

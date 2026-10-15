@@ -31,12 +31,6 @@
   custom.ssh.enable = true;
   custom.shell-tools.enable = true;
   custom.claude-code.enable = true;
-  # Bookmark manager on http://localhost:9090 (modules/home-manager/darwin/linkding.nix)
-  custom.linkding = {
-    enable = true;
-    # agenix secret, see ../../secrets.nix
-    environmentFile = osConfig.age.secrets."linkding.env".path;
-  };
   custom.git = {
     enable = true;
     signing.enable = true;
