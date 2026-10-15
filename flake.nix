@@ -110,6 +110,7 @@
             ./modules/nixos/locale.nix
             ./modules/nixos/fonts.nix
             ./modules/nixos/heartbeat.nix
+            ./modules/nixos/linkding-backup.nix
             ./modules/nixos/plasma.nix
             ./modules/nixos/self-deploy.nix
             ./modules/nixos/ssh-server.nix
@@ -148,13 +149,6 @@
             ./modules/home-manager/shell-tools.nix
             ./modules/home-manager/claude-code.nix
             inputs.nix-index-database.homeModules.nix-index
-          ];
-        };
-
-        # macOS-only modules (launchd services); imported by darwin hosts only
-        darwin = {
-          imports = [
-            ./modules/home-manager/darwin/linkding.nix
           ];
         };
       };
@@ -228,11 +222,6 @@
           flake = self;
         };
         modules = [
-          {
-            nixpkgs.overlays = [
-              (final: prev: { linkding = final.callPackage ./overlays/Kawagoe/linkding.nix { }; })
-            ];
-          }
           self.darwinModules.default
           ./hosts/Kawagoe
           inputs.agenix.darwinModules.default
@@ -248,7 +237,6 @@
             };
             home-manager.sharedModules = [
               self.homeModules.default
-              self.homeModules.darwin
             ];
           }
           inputs.nixkeeper.darwinModules.default

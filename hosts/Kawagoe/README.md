@@ -18,14 +18,12 @@ package diff, then activation). The Mac's hostname is set to `Kawagoe`
 - **`gha <pr-number>`** (`users/haoji/zsh.nix`): triggers a nixpkgs-review run
   for a nixpkgs PR on GitHub Actions (`iedame/nixpkgs-review-gha`).
 - **Health reports** (`custom.heartbeat`, `modules/darwin/heartbeat.nix`): a
-  root launchd job tells an Uptime Kuma "push" monitor every minute whether
-  this Mac is healthy, meaning that linkding's two agents are loaded and
-  didn't last end in an error. Uptime Kuma sends a
-  Telegram message if a report says otherwise or the reports stop. The
-  agents only exist while `haoji` is logged in, so after a restart the
-  monitor stays red until the login. The push URL is the agenix secret
-  `kawagoe/heartbeat-url.age`. Log (only when the monitor can't be reached):
-  `/var/log/heartbeat.log`.
+  root launchd job tells an Uptime Kuma "push" monitor every minute that
+  this Mac is up, and whether the background jobs it is told to watch
+  (none at the moment) are loaded and didn't last end in an error. Uptime
+  Kuma sends a Telegram message if a report says otherwise or the reports
+  stop. The push URL is the agenix secret `kawagoe/heartbeat-url.age`. Log
+  (only when the monitor can't be reached): `/var/log/heartbeat.log`.
 - **nixkeeper start-runs** (`nixkeeper-start-runs.nix`), switched off:
   Narita starts nixkeeper's runs through the GitHub API every hour. To do
   it from here while Narita is down, set
@@ -34,23 +32,9 @@ package diff, then activation). The Mac's hostname is set to `Kawagoe`
   watch it. Its token is the Keychain item `nixkeeper-start-runs`, which
   has to be one valid for the `nixkeeper` organisation's repositories. Log:
   `~/Library/Logs/nixkeeper-start-runs.log`.
-- **linkding** (`custom.linkding`, `modules/home-manager/darwin/linkding.nix`, part of the darwin-only `homeModules.darwin`):
-  the bookmark manager as two user launchd agents, the web server on
-  `127.0.0.1:9090` and the background-task worker, with data in
-  `~/.local/share/linkding`. `linkding-manage <command>` runs Django management
-  commands against it (e.g. `linkding-manage createsuperuser`). Logs:
-  `~/Library/Logs/linkding*.log`. nixpkgs' package is Linux-only for now, so
-  `overlays/Kawagoe/linkding.nix` carries a copy with the darwin fix; it can
-  go once that lands in nixpkgs. Its environment file is an agenix secret
-  (`secrets.nix`). The tailnet reaches it at `https://linkding.<tailnet>.ts.net`,
-  a Tailscale Service (`svc:linkding`) that follows linkding if it moves to
-  another host. It is set up by hand, not by this config: define the service
-  and approve this host in the admin console, allow the devices' tags to
-  reach `svc:linkding` in the access rules, and advertise it here once with
-  `sudo tailscale serve --service=svc:linkding --https=443 127.0.0.1:9090`
-  (`tailscale serve status` shows it; Tailscale keeps it across reboots).
-  Aurora's instance (NixOS's `services.linkding`) is switched off while this
-  one is being tried out.
+- **linkding** ran here until October 2026 and moved to
+  [Ginza](../Ginza/README.md). The old data is still in
+  `~/.local/share/linkding` until deleted.
 - **Intel builds**: `custom.nix-core.extraPlatforms` adds `x86_64-darwin`
   (via Rosetta).
 - **Build limits**: `custom.nix-core.build` caps Nix at 2 builds at a time

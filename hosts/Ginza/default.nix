@@ -17,6 +17,12 @@
     environmentFile = config.age.secrets."linkding.env".path;
   };
   custom.tailscale-services.linkding.target = "http://127.0.0.1:${toString config.services.linkding.port}";
+  # Backed up every night, encrypted, to the private R2 bucket, with a
+  # weekly restore test (modules/nixos/linkding-backup.nix)
+  custom.linkding-backup = {
+    enable = true;
+    environmentFile = config.age.secrets."backup.env".path;
+  };
 
   # Reports this host's health to Narita's Uptime Kuma, which alerts if a
   # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The

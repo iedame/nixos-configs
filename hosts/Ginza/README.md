@@ -26,10 +26,39 @@ Once, in the admin console: approve this host for `svc:linkding` (the
 service already exists from the Mac). The tags allowed to reach it don't
 change.
 
-Its data is in `/var/lib/linkding`: the SQLite database, favicons and
-previews. It moved from the Mac's `~/.local/share/linkding` (same linkding
-version, 1.47.0) by copying that folder over with linkding stopped on both
-sides.
+Its data is in `/var/lib/linkding`: the SQLite database, its secret key
+(which keeps logins valid), favicons and previews. It moved here from the
+Mac's `~/.local/share/linkding` on 2026-10-15 (the same linkding version,
+1.47.0): a consistent copy of the database, taken with SQLite's backup
+command, and the secret key, put in place with linkding stopped here.
+
+### Backup
+
+Every night it is backed up, encrypted, to the private R2 backups bucket
+(`custom.linkding-backup`, `modules/nixos/linkding-backup.nix`), the same
+way as Uptime Kuma on Narita and Nikko and with the same R2 token and
+password (`shared/backup.env.age`). Once a week the newest copy is restored
+into a scratch folder and checked: database intact, bookmarks in it, secret
+key present, every file in the repository readable. Either failing shows up
+in the health reports.
+
+```bash
+ssh ginza sudo restic-linkding snapshots                   # the copies
+ssh ginza sudo systemctl start linkding-restore-test     # test a restore now
+```
+
+To restore, the newest copy into a scratch folder, then over the live
+data with linkding stopped:
+
+```bash
+sudo restic-linkding restore latest --target /tmp/restore
+sudo systemctl stop linkding-background-tasks linkding
+sudo cp /tmp/restore/var/backup/linkding/db.sqlite3 /tmp/restore/var/backup/linkding/secretkey.txt /var/lib/linkding/
+sudo rm -f /var/lib/linkding/db.sqlite3-wal /var/lib/linkding/db.sqlite3-shm
+sudo chown -R linkding:linkding /var/lib/linkding
+sudo systemctl start linkding linkding-background-tasks
+sudo rm -rf /tmp/restore
+```
 
 ## Installing
 

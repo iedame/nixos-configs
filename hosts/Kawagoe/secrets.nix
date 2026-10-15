@@ -8,13 +8,6 @@
   # Decrypted at activation to /run/agenix/test (root:wheel 0400)
   age.secrets.test.file = "${inputs.secrets}/kawagoe/test.age";
 
-  # linkding runs as a user agent (users/haoji), so its environment file has
-  # to be readable by that user rather than by root
-  age.secrets."linkding.env" = {
-    file = "${inputs.secrets}/kawagoe/linkding.env.age";
-    owner = "haoji";
-  };
-
   # Push URL of this Mac's monitor in Uptime Kuma (custom.heartbeat,
   # default.nix); read by a root launchd job
   age.secrets."heartbeat-url".file = "${inputs.secrets}/kawagoe/heartbeat-url.age";
