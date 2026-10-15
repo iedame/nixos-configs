@@ -2,13 +2,9 @@
 
 NixOS on Oracle Cloud's Always Free Ampere A1 instance (VM.Standard.A1.Flex,
 aarch64-linux: 4 Arm cores and 24 GB of memory, the whole free A1
-allowance). It runs:
-
-- **linkding**, the bookmark manager, moved here from the Mac:
-  `https://linkding.<tailnet>.ts.net`, the Tailscale Service `svc:linkding`.
-- **The tailnet's DNS server** (Blocky): ordinary lookups from the tailnet's
-  devices, with ads and trackers blocked, sent on to Quad9 and Cloudflare
-  over HTTPS.
+allowance). It runs **linkding**, the bookmark manager, moved here from
+the Mac: `https://linkding.<tailnet>.ts.net`, the Tailscale Service
+`svc:linkding`.
 
 The machine itself (disk, boot loader, admin account) is described in
 `modules/nixos/oracle-a1.nix` and `modules/nixos/oracle.nix`, which it
@@ -22,27 +18,6 @@ uploads all of it to the cache, and after every merge the host finds the
 new system and activates it by itself (`custom.self-deploy`). The commands
 in Narita's README ("How it's updated") work here with `ginza` in place of
 `narita`.
-
-## The tailnet's DNS
-
-In the Tailscale admin console, DNS:
-
-1. Add a global nameserver: this host's Tailscale address.
-2. Turn on "Override local DNS", so devices use it instead of their
-   network's resolver.
-
-Names on the tailnet itself (MagicDNS) keep working: each device's
-Tailscale answers those and sends everything else here. This host doesn't
-use itself, and neither do Narita and Nikko (`--accept-dns=false` in
-`modules/nixos/oracle.nix`), so it keeps resolving and updating while
-Blocky is down, and their monitoring doesn't depend on it. The tailnet's
-other devices do: if Ginza is down, their lookups fail until it is back, or
-until "Override local DNS" is turned off. A device can opt out with
-Tailscale's own switch ("Use Tailscale DNS settings").
-
-To see what it does: `ssh ginza journalctl -u blocky -n 20 --no-pager`.
-A blocked name answers `0.0.0.0`:
-`dig @<Ginza's Tailscale address> doubleclick.net`.
 
 ## linkding
 

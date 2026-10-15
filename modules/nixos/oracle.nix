@@ -90,11 +90,4 @@
   # first boot (see hosts/Narita/README.md).
   services.tailscale.enable = true;
   custom.ssh-server.enable = true;
-
-  # These hosts don't take their DNS settings from Tailscale, so they keep
-  # resolving through Oracle's resolver whatever the tailnet's DNS does.
-  # Ginza is that DNS server itself and must not depend on it; Narita and
-  # Nikko watch the other services and sites, and shouldn't report them
-  # down because the tailnet's DNS is, or blocks a name.
-  services.tailscale.extraSetFlags = [ "--accept-dns=false" ];
 }

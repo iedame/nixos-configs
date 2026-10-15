@@ -32,6 +32,10 @@
       address = "100.118.90.64";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINozjjMQunxp6OHJBBVFtS6IkHiZSd/WeHzke+dF9ims";
     };
+    Ginza = {
+      address = "100.114.25.47";
+      hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINY3du1Y4H5un/N5Dg3lfykUVdoCtI7dkBZXWrFPFusF";
+    };
     Narita = {
       address = "100.111.191.17";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPep0HwSN8SjvyY5MVuHh3rLOzFbYE9l2goJjmPJmeFo";
