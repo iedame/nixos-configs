@@ -33,10 +33,12 @@ In the Tailscale admin console, DNS:
 
 Names on the tailnet itself (MagicDNS) keep working: each device's
 Tailscale answers those and sends everything else here. This host doesn't
-use itself (`--accept-dns=false` in `default.nix`), so it keeps resolving,
-and updating, while Blocky is down. The tailnet's devices don't: if Ginza
-is down, their lookups fail until it is back, or until "Override local
-DNS" is turned off.
+use itself, and neither do Narita and Nikko (`--accept-dns=false` in
+`modules/nixos/oracle.nix`), so it keeps resolving and updating while
+Blocky is down, and their monitoring doesn't depend on it. The tailnet's
+other devices do: if Ginza is down, their lookups fail until it is back, or
+until "Override local DNS" is turned off. A device can opt out with
+Tailscale's own switch ("Use Tailscale DNS settings").
 
 To see what it does: `ssh ginza journalctl -u blocky -n 20 --no-pager`.
 A blocked name answers `0.0.0.0`:

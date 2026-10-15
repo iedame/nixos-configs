@@ -15,11 +15,6 @@
   boot.initrd.systemd.enable = false;
   custom.ssh-server.openToInternet = true;
 
-  # This host is the tailnet's DNS server (below), so it doesn't take its
-  # own DNS settings from Tailscale: it keeps resolving through Oracle's
-  # resolver, and so keeps updating itself even when Blocky is down.
-  services.tailscale.extraSetFlags = [ "--accept-dns=false" ];
-
   # Bookmarks, moved here from the Mac. It listens on this machine only and
   # is published on the tailnet as the Tailscale Service svc:linkding, with
   # its own name and HTTPS certificate: https://linkding.<tailnet>.ts.net
