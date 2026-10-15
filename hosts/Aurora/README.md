@@ -21,7 +21,7 @@ progress, package diff, then activation).
 | `graphics.nix` | NVIDIA driver and OpenGL |
 | `gaming.nix` | Steam, gamemode, ArchiSteamFarm, launchers and emulators |
 | `backup.nix` | Off-site Borg backups of the photo library, documents and home folders |
-| `services.nix` | Caddy + ACME, Immich, Forgejo, Jellyfin and the *arr apps, Paperless, Vaultwarden, linkding, Syncthing, Podman |
+| `services.nix` | Caddy + ACME, Immich, Forgejo, Jellyfin and the *arr apps, Paperless, Vaultwarden, Syncthing, Podman |
 | `ssh.nix` | SSH server (Tailscale only) |
 | `secrets.nix` | agenix secrets |
 | `hardware-configuration.nix` | Generated hardware settings |
@@ -236,7 +236,6 @@ in `aurora/` of the private secrets repo), decrypted at activation into
 |---|---|
 | `cloudflare-dns.env` | ACME DNS challenge for the wildcard certificate |
 | `vaultwarden.env` | Vaultwarden |
-| `linkding.env` | linkding |
 | `heartbeat-url` | The health reports above |
 | `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
 | `borg-ssh-config`, `borg-ssh-key` | The backups: how to reach the storage box, and the key for it |
@@ -250,7 +249,6 @@ sudo ls -l /run/agenix/
 
 # Each service's environment file points into /run/agenix
 systemctl show vaultwarden -p EnvironmentFiles
-systemctl show linkding -p EnvironmentFiles
 systemctl show acme-order-renew-ts.wildtonberries.com -p EnvironmentFiles
 ```
 

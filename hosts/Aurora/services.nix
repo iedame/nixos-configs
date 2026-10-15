@@ -158,10 +158,6 @@ in
         extraConfig = "reverse_proxy ${tailscaleIp}:2283";
         useACMEHost = domain;
       };
-      "linkding.${domain}" = {
-        extraConfig = "reverse_proxy ${tailscaleIp}:9090";
-        useACMEHost = domain;
-      };
       "git.${domain}" = {
         extraConfig = "reverse_proxy ${tailscaleIp}:3000";
         useACMEHost = domain;
@@ -381,15 +377,6 @@ in
       ROCKET_PORT = 8222;
       ROCKET_LOG = "critical";
     };
-  };
-
-  services.linkding = {
-    # Off while the copy on Kawagoe is being tried out; the data stays in
-    # /var/lib/linkding
-    enable = false;
-    port = 9090;
-    address = tailscaleIp;
-    environmentFile = config.age.secrets."linkding.env".path;
   };
 
   virtualisation = {

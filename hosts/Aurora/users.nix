@@ -13,7 +13,6 @@
       "immich"
       "syncthing"
       "i2c"
-      "linkding"
     ];
     shell = pkgs.zsh;
     packages = with pkgs; [
