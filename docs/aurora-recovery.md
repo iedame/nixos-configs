@@ -374,6 +374,14 @@ So that nobody goes looking for it in a repository:
 Certificates, the Nix store and Tailscale's state are re-created and need
 no backup.
 
+## Restoring a lot from far away
+
+Restoring a whole repository from the storage box to Aurora is too slow
+done directly: Borg's many small requests each wait for the round trip to
+Helsinki. [borg-remote-restore.md](borg-remote-restore.md) describes what
+worked for 4.8 TB: a temporary cloud server next to the box, streaming to
+Aurora in 20 parallel streams.
+
 ## Afterwards
 
 Recovery is done when all of these hold:
