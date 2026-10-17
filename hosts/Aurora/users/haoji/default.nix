@@ -27,7 +27,9 @@
   custom.zsh = {
     enable = true;
     extraAliases = {
-      update = "nh os switch -H Aurora";
+      # nh hides the activation's output, so say here whether the switch
+      # installed a kernel that needs a reboot (custom.reboot-notice)
+      update = "nh os switch -H Aurora && { needrestart || true; }";
     };
   };
 

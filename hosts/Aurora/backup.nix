@@ -140,6 +140,15 @@ in
   # Daily, encrypted, off-site backups with Borg. A failed run leaves a
   # failed unit, which the heartbeat (default.nix) reports. See README.md
   # here for listing and restoring.
+  # The storage boxes' SSH host key, so the backups never have to trust a
+  # key the first time they see it. Hetzner uses this one key for every
+  # storage box (checked 2026-10-17), so a wildcard covers all accounts
+  # without naming them.
+  programs.ssh.knownHosts.hetzner-storage-box = {
+    hostNames = [ "[*.your-storagebox.de]:23" ];
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICf9svRenC/PLKIL9nk6K/pxQgoiFC41wTNvoIncOxs";
+  };
+
   services.borgbackup.jobs = {
     # The Immich photo library. This repository and the next continue
     # the ones Pika Backup created, so they keep Pika's archive prefixes:
