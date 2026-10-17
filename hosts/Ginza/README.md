@@ -106,13 +106,15 @@ approve this host for it, and let the tags of the machines that sync reach
 it.
 
 The server's address names the tailnet, so it isn't in this repository.
-On each machine, after `update`, put it in a file:
+On each machine, put it in a file, then `update`, which writes it into
+Atuin's config file (until then Atuin's address goes nowhere):
 
 ```bash
 mkdir -p ~/.config/atuin && echo 'https://atuin.<tailnet>.ts.net' > ~/.config/atuin/sync-address
+update
 ```
 
-Then, in a new shell. On the first machine (Kawagoe), make the account,
+On the first machine (Kawagoe), make the account,
 bring in the existing history, and show the encryption key:
 
 ```bash
