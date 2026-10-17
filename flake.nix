@@ -118,6 +118,7 @@
             ./modules/nixos/linkding-backup.nix
             ./modules/nixos/plasma.nix
             ./modules/nixos/reboot-for-kernel.nix
+            ./modules/nixos/reboot-notice.nix
             ./modules/nixos/self-deploy.nix
             ./modules/nixos/ssh-server.nix
             ./modules/nixos/tailscale-services.nix
