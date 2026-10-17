@@ -24,6 +24,14 @@
     environmentFile = config.age.secrets."backup.env".path;
   };
 
+  # Beszel's hub: a dashboard of every host's CPU, memory, disk, network and
+  # services, with history and threshold alerts. Like linkding, it listens
+  # on this machine only and is published as the Tailscale Service
+  # svc:beszel (https://beszel.<tailnet>.ts.net). The hosts' agents report
+  # to it (README.md, "Beszel").
+  services.beszel.hub.enable = true;
+  custom.tailscale-services.beszel.target = "http://127.0.0.1:${toString config.services.beszel.hub.port}";
+
   # Reports this host's health to Narita's Uptime Kuma, which alerts if a
   # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The
   # monitor's push URL is an agenix secret (secrets.nix).

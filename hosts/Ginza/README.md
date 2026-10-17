@@ -4,7 +4,8 @@ NixOS on Oracle Cloud's Always Free Ampere A1 instance (VM.Standard.A1.Flex,
 aarch64-linux: 4 Arm cores and 24 GB of memory, the whole free A1
 allowance). It runs **linkding**, the bookmark manager, moved here from
 the Mac: `https://linkding.<tailnet>.ts.net`, the Tailscale Service
-`svc:linkding`.
+`svc:linkding`; and **Beszel**'s hub, a dashboard of all the hosts:
+`https://beszel.<tailnet>.ts.net`, `svc:beszel`.
 
 The machine itself (disk, boot loader, admin account) is described in
 `modules/nixos/oracle-a1.nix` and `modules/nixos/oracle.nix`, which it
@@ -75,3 +76,18 @@ differences:
 - **SSH from the internet is closed** in Oracle's security list. For the
   conversion, an ingress rule allowed port 22 from one address only (the
   one doing the conversion), removed again once Tailscale was back.
+
+## Beszel
+
+The hub (`services.beszel.hub`) shows each host's CPU, memory, disk,
+network, temperatures and services, with history, and can alert on
+thresholds (a disk over 90%, say). The hosts run Beszel's agent, which
+sends their data to the hub.
+
+It is published by `custom.tailscale-services` in `default.nix`. Once, in
+the admin console: define the service `svc:beszel` (port 443), approve this
+host for it, and let the tags that should see the dashboard reach it.
+
+Its data (accounts, the systems list, history) is in `/var/lib/beszel-hub`
+and isn't backed up: losing it costs the history and setting the systems
+up again, nothing else.
