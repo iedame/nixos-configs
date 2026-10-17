@@ -38,6 +38,13 @@
     environmentFile = config.age.secrets."backup.env".path;
   };
 
+  # Reports this host's usage to Beszel's hub on Ginza
+  # (modules/nixos/beszel-agent.nix)
+  custom.beszel-agent = {
+    enable = true;
+    environmentFile = config.age.secrets."beszel-agent.env".path;
+  };
+
   # Reports this host's health to Nikko's Uptime Kuma, which alerts if a
   # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The
   # monitor's push URL is an agenix secret (secrets.nix).

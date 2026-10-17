@@ -108,6 +108,7 @@
         default = {
           imports = [
             ./modules/nixos/nix-core.nix
+            ./modules/nixos/beszel-agent.nix
             ./modules/nixos/disk-health.nix
             ./modules/nixos/family-laptop.nix
             ./modules/nixos/flatpak.nix

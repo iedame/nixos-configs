@@ -21,5 +21,8 @@
     # Telegram bot token and chat ID for `notify` (custom.notify); the same
     # file on all three servers
     "telegram.env".file = "${inputs.secrets}/shared/telegram.env.age";
+    # Beszel agent settings: the hub's address, a universal token and the
+    # hub's public key (custom.beszel-agent); the same file on every host
+    "beszel-agent.env".file = "${inputs.secrets}/shared/beszel-agent.env.age";
   };
 }
