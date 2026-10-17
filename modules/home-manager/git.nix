@@ -8,10 +8,15 @@
 let
   cfg = config.custom.git;
 
-  # 1Password's signer talks to the running 1Password app, which holds the key
+  # 1Password's signer talks to the running 1Password app, which holds the
+  # key. Under WSL, 1Password runs on Windows and its agent is reached
+  # through SSH_AUTH_SOCK (wsl.ssh-agent), so plain ssh-keygen signs with
+  # the key there.
   opSshSign =
     if pkgs.stdenv.hostPlatform.isDarwin then
       "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+    else if osConfig.wsl.ssh-agent.enable or false then
+      lib.getExe' pkgs.openssh "ssh-keygen"
     else
       lib.getExe' osConfig.programs._1password-gui.package "op-ssh-sign";
 in
