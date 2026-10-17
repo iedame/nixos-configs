@@ -43,9 +43,9 @@
       createLocally = false;
       uri = "sqlite:///var/lib/atuin/atuin.db";
     };
-    # Open for the first account, which Kawagoe registers; set to false
-    # afterwards. Only devices allowed to reach svc:atuin could register.
-    openRegistration = true;
+    # Closed: the one account exists (registered from Kawagoe). The other
+    # machines log in to it with its key.
+    openRegistration = false;
   };
   # The module keeps nothing on disk (it expects Postgres); the SQLite
   # database needs a directory that survives restarts
