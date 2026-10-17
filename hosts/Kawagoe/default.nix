@@ -70,6 +70,13 @@
     urlFile = config.age.secrets."heartbeat-url".path;
   };
 
+  # Reports this Mac's usage to Beszel's hub on Ginza
+  # (modules/darwin/beszel-agent.nix)
+  custom.beszel-agent = {
+    enable = true;
+    environmentFile = config.age.secrets."beszel-agent.env".path;
+  };
+
   # nixkeeper's runs are started from Narita. Set this to true to do it
   # from here while that server is down (nixkeeper-start-runs.nix).
   custom.nixkeeper-start-runs.enable = false;

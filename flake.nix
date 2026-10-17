@@ -140,6 +140,7 @@
       darwinModules.default = {
         imports = [
           ./modules/darwin/nix-core.nix
+          ./modules/darwin/beszel-agent.nix
           ./modules/darwin/fonts.nix
           ./modules/darwin/heartbeat.nix
         ];
