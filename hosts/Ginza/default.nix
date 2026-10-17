@@ -32,6 +32,15 @@
   services.beszel.hub.enable = true;
   custom.tailscale-services.beszel.target = "http://127.0.0.1:${toString config.services.beszel.hub.port}";
 
+  # Reports this host's usage to Beszel's hub on Ginza
+  # (modules/nixos/beszel-agent.nix)
+  custom.beszel-agent = {
+    enable = true;
+    environmentFile = config.age.secrets."beszel-agent.env".path;
+    # The hub is on this host
+    hubUrl = "http://127.0.0.1:${toString config.services.beszel.hub.port}";
+  };
+
   # Reports this host's health to Narita's Uptime Kuma, which alerts if a
   # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The
   # monitor's push URL is an agenix secret (secrets.nix).

@@ -99,6 +99,21 @@
   # Enable Tailscale service
   services.tailscale.enable = true;
 
+  # Reports this host's usage to Beszel's hub on Ginza
+  # (modules/nixos/beszel-agent.nix), with the ZFS datasets and the second
+  # disk besides the root file system; the GPU is picked up from the NVIDIA
+  # driver
+  custom.beszel-agent = {
+    enable = true;
+    environmentFile = config.age.secrets."beszel-agent.env".path;
+    extraFilesystems = [
+      "/backup-pool/photos"
+      "/backup-pool/documents"
+      "/external-pool"
+      "/mnt/storage"
+    ];
+  };
+
   # Reports this host's health to an Uptime Kuma push monitor on one of the
   # Oracle servers, which alerts when a unit fails here. This machine is
   # often off, so the monitor's heartbeat interval is set to weeks: silence

@@ -31,6 +31,9 @@
     "borg-immich-passphrase".file = "${inputs.secrets}/aurora/borg-immich-passphrase.age";
     "borg-home-passphrase".file = "${inputs.secrets}/aurora/borg-home-passphrase.age";
     "borg-services-passphrase".file = "${inputs.secrets}/aurora/borg-services-passphrase.age";
+    # Beszel agent settings: the hub's address, a universal token and the
+    # hub's public key (custom.beszel-agent); the same file on every host
+    "beszel-agent.env".file = "${inputs.secrets}/shared/beszel-agent.env.age";
   };
 
   # agenix CLI, for editing the secrets (in a clone of the private repo)
