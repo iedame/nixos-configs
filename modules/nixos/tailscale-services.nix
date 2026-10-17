@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -56,7 +57,10 @@ in
     wantedBy = [ "multi-user.target" ];
     wants = [ "tailscaled.service" ];
     after = [ "tailscaled.service" ];
-    path = [ config.services.tailscale.package ];
+    path = [
+      config.services.tailscale.package
+      pkgs.jq
+    ];
     # With nothing declared there is only work to do if something was
     # published earlier
     unitConfig.ConditionPathExists = lib.mkIf (cfg == { }) "/var/lib/tailscale-services/managed";
@@ -71,6 +75,14 @@ in
     script = ''
       managed="$STATE_DIRECTORY/managed"
       wanted=${lib.escapeShellArg (lib.concatStringsSep " " (lib.attrNames cfg))}
+
+      # A switch that updates Tailscale restarts tailscaled just before this
+      # unit, and serve fails ("unexpected state: NoState") until it is
+      # connected again; that failure fails the whole switch
+      for _ in $(seq 60); do
+        [ "$(tailscale status --json | jq -r .BackendState)" = Running ] && break
+        sleep 1
+      done
 
       if [ -f "$managed" ]; then
         while read -r name; do
