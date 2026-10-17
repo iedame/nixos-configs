@@ -30,6 +30,35 @@ ssh narita sudo systemctl start self-deploy       # look now
 ssh narita sudo systemctl stop self-deploy.timer  # hold the current system
 ```
 
+Whether it runs what `master` last built: compare the system it runs with
+the one CI built, computed from an up-to-date checkout (nothing is built).
+Wait for CI's run on `master` and the next look first; until then they
+differ.
+
+```bash
+git -C ~/.config/nixos-configs pull
+nix eval --raw ~/.config/nixos-configs#nixosConfigurations.Narita.config.system.build.toplevel.outPath   # what CI built
+ssh narita readlink /run/current-system                                                                  # what it runs
+```
+
+A failed update doesn't always mean the old system is still running.
+`self-deploy` is marked failed whenever the switch reports an error, even
+when the new system was activated and only one step went wrong.
+`journalctl -u self-deploy -n 40 --no-pager -o cat` shows which step it
+was, and `readlink /run/current-system` whether the new system is in place.
+If it is, and `systemctl --failed` lists nothing but `self-deploy`, the next
+look finds nothing to do and clears the mark within 15 minutes. Seen so far:
+
+- A unit that started while `tailscaled` was restarting for its own update.
+  `tailscale-services` now waits for it.
+- "user activation for haoji failed": an SSH session as haoji ended in the
+  middle of the switch. Don't keep logging in while it runs; read the log
+  afterwards.
+
+A switch that restarts Uptime Kuma also fails the other host's check of
+its web page for a few seconds: a Telegram "502" followed by "200 - OK".
+That's expected.
+
 A kernel update only takes effect after a reboot, which nothing does
 automatically.
 
