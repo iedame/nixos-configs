@@ -2,16 +2,22 @@
   config,
   lib,
   pkgs,
+  osConfig,
   ...
 }:
 let
   cfg = config.custom.ssh;
   inventory = import ../../lib/hosts.nix;
 
-  # 1Password's SSH agent socket (Settings > Developer > Use the SSH agent)
+  # 1Password's SSH agent socket (Settings > Developer > Use the SSH agent).
+  # Under WSL, 1Password runs on Windows, and NixOS-WSL's bridge to it
+  # (wsl.ssh-agent) is announced in SSH_AUTH_SOCK, which this value makes
+  # ssh read.
   onePasswordAgent =
     if pkgs.stdenv.hostPlatform.isDarwin then
       ''"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"''
+    else if osConfig.wsl.ssh-agent.enable or false then
+      "SSH_AUTH_SOCK"
     else
       "~/.1password/agent.sock";
 

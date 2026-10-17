@@ -48,6 +48,10 @@
     nixkeeper.inputs.nix-darwin.follows = "nix-darwin";
     nixkeeper.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    # NixOS under WSL, for Akihabara
+    nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
+    nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
+
     # Formatter setup for `nix fmt` and the formatting check
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
@@ -208,6 +212,33 @@
           ./hosts/Kawaguchiko
           inputs.disko.nixosModules.disko
           inputs.nixos-hardware.nixosModules.apple-macbook-pro-11-1
+        ];
+      };
+
+      # NixOS under WSL on the gaming laptop; home-manager like Aurora's,
+      # but no agenix
+      nixosConfigurations.Akihabara = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit inputs;
+        };
+        modules = [
+          self.nixosModules.default
+          ./hosts/Akihabara
+          inputs.nixos-wsl.nixosModules.default
+          inputs.home-manager.nixosModules.home-manager
+          {
+            home-manager.backupFileExtension = "backup";
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.haoji = import ./hosts/Akihabara/users/haoji;
+            home-manager.extraSpecialArgs = {
+              inherit inputs;
+            };
+            home-manager.sharedModules = [
+              self.homeModules.default
+            ];
+          }
         ];
       };
 

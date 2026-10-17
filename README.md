@@ -12,6 +12,7 @@ home-manager. Layout inspired by
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
 | [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), updates itself from this repo |
 | [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), the same set-up as Tsukuba |
+| [Akihabara](hosts/Akihabara/README.md) | NixOS-WSL, x86_64-linux | Command-line NixOS under WSL on the gaming laptop (Windows 11) |
 | [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud micro instance: uptime monitoring, Tailscale exit node |
 | [Nikko](hosts/Nikko/README.md) | NixOS, x86_64-linux | Oracle Cloud micro instance: uptime monitoring, Tailscale exit node |
 | [Ginza](hosts/Ginza/README.md) | NixOS, aarch64-linux | Oracle Cloud Ampere A1 instance: linkding |
@@ -39,14 +40,14 @@ How each host gets a merged change, and how to check that it did:
 
 | Host | Updates | Check |
 |---|---|---|
-| Aurora, Kawagoe | By hand, with `update` (below) | The switch's own output; `update-diff` for what changed |
+| Aurora, Kawagoe, Akihabara | By hand, with `update` (below) | The switch's own output; `update-diff` for what changed |
 | Tsukuba, Kawaguchiko | By themselves, weekly, from the next boot ([Tsukuba](hosts/Tsukuba/README.md#how-its-kept-up-to-date)) | `systemctl status nixos-upgrade` on the laptop |
 | Narita, Nikko, Ginza | By themselves, about 20 minutes after a merge ([Narita](hosts/Narita/README.md#how-its-updated)) | Narita's README: whether it runs the latest system, and what a failed update means |
 
 A failed automatic update also shows up in the hosts' health reports, as a
 failed unit.
 
-Rebuild the current machine (Aurora and Kawagoe define this alias, which runs
+Rebuild the current machine (Aurora, Kawagoe and Akihabara define this alias, which runs
 `nh`):
 
 ```bash
