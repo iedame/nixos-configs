@@ -4,8 +4,9 @@ NixOS on Oracle Cloud's Always Free Ampere A1 instance (VM.Standard.A1.Flex,
 aarch64-linux: 4 Arm cores and 24 GB of memory, the whole free A1
 allowance). It runs **linkding**, the bookmark manager, moved here from
 the Mac: `https://linkding.<tailnet>.ts.net`, the Tailscale Service
-`svc:linkding`; and **Beszel**'s hub, a dashboard of all the hosts:
-`https://beszel.<tailnet>.ts.net`, `svc:beszel`.
+`svc:linkding`; **Beszel**'s hub, a dashboard of all the hosts:
+`https://beszel.<tailnet>.ts.net`, `svc:beszel`; and **Atuin**'s sync
+server for shell history: `https://atuin.<tailnet>.ts.net`, `svc:atuin`.
 
 The machine itself (disk, boot loader, admin account) is described in
 `modules/nixos/oracle-a1.nix` and `modules/nixos/oracle.nix`, which it
@@ -91,3 +92,42 @@ host for it, and let the tags that should see the dashboard reach it.
 Its data (accounts, the systems list, history) is in `/var/lib/beszel-hub`
 and isn't backed up: losing it costs the history and setting the systems
 up again, nothing else.
+
+## Atuin
+
+The server (`services.atuin`) syncs shell history between Kawagoe,
+Akihabara and Aurora (`custom.atuin`, `modules/home-manager/atuin.nix`).
+The clients encrypt the history before sending it, so the server only
+stores ciphertext. Its database is SQLite in `/var/lib/atuin`, not backed
+up: each machine keeps its own full copy.
+
+Once, in the admin console: define the service `svc:atuin` (port 443),
+approve this host for it, and let the tags of the machines that sync reach
+it.
+
+The server's address names the tailnet, so it isn't in this repository.
+On each machine, after `update`, put it in a file:
+
+```bash
+mkdir -p ~/.config/atuin && echo 'https://atuin.<tailnet>.ts.net' > ~/.config/atuin/sync-address
+```
+
+Then, in a new shell. On the first machine (Kawagoe), make the account,
+bring in the existing history, and show the encryption key:
+
+```bash
+atuin register -u <user> -e <email>
+atuin import auto && atuin sync
+atuin key
+```
+
+The key decrypts the history; keep it in 1Password. On the other
+machines, log in with it:
+
+```bash
+atuin login -u <user> -k '<key>'
+atuin import auto && atuin sync
+```
+
+After the first account exists, set `services.atuin.openRegistration` to
+false in `default.nix`.

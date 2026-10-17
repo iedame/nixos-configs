@@ -31,6 +31,7 @@
   custom.ssh.enable = true;
   custom.shell-tools.enable = true;
   custom.claude-code.enable = true;
+  custom.atuin.enable = true;
   custom.git = {
     enable = true;
     signing.enable = true;

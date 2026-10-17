@@ -157,6 +157,7 @@
             ./modules/home-manager/ssh.nix
             ./modules/home-manager/shell-tools.nix
             ./modules/home-manager/claude-code.nix
+            ./modules/home-manager/atuin.nix
             inputs.nix-index-database.homeModules.nix-index
           ];
         };
