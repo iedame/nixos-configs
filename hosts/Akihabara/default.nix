@@ -15,6 +15,15 @@
     ssh-agent.enable = true;
   };
 
+  # WSL can start the user's systemd manager (user@1000) while its cgroup is
+  # still busy ("Failed to spawn executor: Device or resource busy"), and it
+  # gives up. Without it no user service runs, the SSH agent bridge above
+  # included: ssh then has no keys. Try again instead.
+  systemd.services."user@".serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "2s";
+  };
+
   networking.hostName = "Akihabara";
 
   custom.nix-core.enable = true;
