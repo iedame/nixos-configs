@@ -25,9 +25,6 @@ in
       settings = {
         auto_sync = true;
         sync_frequency = "5m";
-        # Replaced by the address file below (ATUIN_SYNC_ADDRESS). Without
-        # that file, this goes nowhere instead of to Atuin's public server.
-        sync_address = "https://atuin.invalid";
         search_mode = "fuzzy";
         style = "compact";
         # Ctrl-R starts with every machine's history; Ctrl-R again cycles
@@ -41,9 +38,15 @@ in
     # it there, while fzf keeps Ctrl-T and Alt-C
     programs.fzf.historyWidget.command = "";
 
+    # The server's address, as ATUIN_SYNC_ADDRESS. Atuin's config file
+    # overrides its environment, so sync_address must not be in the file
+    # (settings above). Without the address file it goes nowhere, instead
+    # of to Atuin's public server, the built-in default.
     programs.zsh.initContent = ''
       if [ -r ${addressFile} ]; then
         export ATUIN_SYNC_ADDRESS="$(< ${addressFile})"
+      else
+        export ATUIN_SYNC_ADDRESS=https://atuin.invalid
       fi
     '';
   };
