@@ -21,6 +21,16 @@ let
     # this host, this session and this directory
     filter_mode = "global";
     enter_accept = false;
+    # Inside a git repository, Ctrl-R also cycles to that repository's
+    # commands, wherever in it they were run
+    workspaces = true;
+    # Never recorded, so an old one can't be picked from the search and run
+    # again in the wrong place (regular expressions over the whole command)
+    history_filter = [
+      "^rm "
+      "^shred "
+      "^dd "
+    ];
   };
 in
 {
