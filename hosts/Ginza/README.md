@@ -129,5 +129,6 @@ atuin login -u <user> -k '<key>'
 atuin import auto && atuin sync
 ```
 
-After the first account exists, set `services.atuin.openRegistration` to
-false in `default.nix`.
+Registration is closed (`services.atuin.openRegistration`, `default.nix`):
+the account exists, and new machines only log in. To make another account,
+open it for a moment the same way.
