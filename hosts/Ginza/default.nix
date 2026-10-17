@@ -32,6 +32,26 @@
   services.beszel.hub.enable = true;
   custom.tailscale-services.beszel.target = "http://127.0.0.1:${toString config.services.beszel.hub.port}";
 
+  # Atuin's sync server: shell history shared between Kawagoe, Akihabara
+  # and Aurora, end-to-end encrypted by the clients
+  # (modules/home-manager/atuin.nix). Its database is SQLite, so no
+  # Postgres here. Published as the Tailscale Service svc:atuin
+  # (README.md, "Atuin").
+  services.atuin = {
+    enable = true;
+    database = {
+      createLocally = false;
+      uri = "sqlite:///var/lib/atuin/atuin.db";
+    };
+    # Open for the first account, which Kawagoe registers; set to false
+    # afterwards. Only devices allowed to reach svc:atuin could register.
+    openRegistration = true;
+  };
+  # The module keeps nothing on disk (it expects Postgres); the SQLite
+  # database needs a directory that survives restarts
+  systemd.services.atuin.serviceConfig.StateDirectory = "atuin";
+  custom.tailscale-services.atuin.target = "http://127.0.0.1:${toString config.services.atuin.port}";
+
   # Reports this host's usage to Beszel's hub on Ginza
   # (modules/nixos/beszel-agent.nix)
   custom.beszel-agent = {
