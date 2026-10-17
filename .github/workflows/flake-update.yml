@@ -90,7 +90,8 @@ jobs:
           cat /tmp/pr_body.md >> "$GITHUB_STEP_SUMMARY"
 
       # One rolling branch: if last week's PR is still open, it is updated
-      # in place instead of a second PR being opened.
+      # in place instead of a second PR being opened. The review request
+      # notifies me whatever my watch setting for the repository is.
       - name: Create pull request
         if: steps.check_changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v8
@@ -104,6 +105,7 @@ jobs:
           branch: automated/flake-update
           base: master
           delete-branch: true
+          reviewers: iedame
 
       - name: No changes
         if: steps.check_changes.outputs.has_changes == 'false'
