@@ -21,5 +21,8 @@
     # GitHub token that may only start and cancel workflow runs in the
     # nixkeeper repositories (nixkeeper-start-runs.nix)
     "nixkeeper-start-runs-token".file = "${inputs.secrets}/narita/nixkeeper-start-runs-token.age";
+    # Telegram bot token and chat ID for `notify` (custom.notify); the same
+    # file on all three servers
+    "telegram.env".file = "${inputs.secrets}/shared/telegram.env.age";
   };
 }

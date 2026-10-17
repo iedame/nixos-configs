@@ -46,6 +46,21 @@
     urlFile = config.age.secrets."heartbeat-url".path;
   };
 
+  # A `notify` command that sends a Telegram message
+  # (modules/nixos/notify.nix); used to announce the reboots below
+  custom.notify = {
+    enable = true;
+    environmentFile = config.age.secrets."telegram.env".path;
+  };
+
+  # Reboots into a newly installed kernel, at 04:40 and only when there is
+  # one (modules/nixos/reboot-for-kernel.nix); half an hour apart from
+  # Nikko (05:10), which watches it, so the two are never down together
+  custom.reboot-for-kernel = {
+    enable = true;
+    at = "04:40";
+  };
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It's perfectly fine and recommended to leave

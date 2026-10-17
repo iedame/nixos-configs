@@ -18,5 +18,8 @@
       file = "${inputs.secrets}/shared/cache-credentials.age";
       path = "/root/.aws/credentials";
     };
+    # Telegram bot token and chat ID for `notify` (custom.notify); the same
+    # file on all three servers
+    "telegram.env".file = "${inputs.secrets}/shared/telegram.env.age";
   };
 }

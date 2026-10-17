@@ -59,8 +59,23 @@ A switch that restarts Uptime Kuma also fails the other host's check of
 its web page for a few seconds: a Telegram "502" followed by "200 - OK".
 That's expected.
 
-A kernel update only takes effect after a reboot, which nothing does
-automatically.
+A kernel update only takes effect after a reboot. Each host does that by
+itself, early in the morning and only when a newer kernel is installed
+(`custom.reboot-for-kernel`, `modules/nixos/reboot-for-kernel.nix`):
+Narita at 04:40, Nikko at 05:10 and Ginza at 05:40, so Narita and Nikko are
+never down together. It sends a Telegram message before rebooting and
+another once the host is back (`custom.notify`,
+`modules/nixos/notify.nix`).
+
+```bash
+ssh narita 'journalctl -u reboot-for-kernel -n 3 --no-pager -o cat'   # what the last check decided
+ssh narita sudo notify "test"                                         # send a Telegram message
+```
+
+The reboots' own outages are kept out of Telegram by a daily maintenance
+window in each Uptime Kuma: 04:35-04:55 on Nikko's (Narita's monitors), and
+05:05-05:25 and 05:35-05:55 on Narita's (Nikko's and Ginza's). A real outage
+in those minutes is only reported once the window ends.
 
 To deploy by hand instead, for instance a branch CI has built but that
 isn't merged (stop the timer first, or it brings back `master`'s system),
