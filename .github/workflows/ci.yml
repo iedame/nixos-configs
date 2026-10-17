@@ -211,7 +211,11 @@ jobs:
           HOST: ${{ matrix.host }}
           ATTR: ${{ matrix.attr }}
         run: |
-          nix build ".#${ATTR}" --out-link result --print-build-logs
+          # abort-on-warn: an evaluation warning (a renamed or deprecated
+          # option, say) fails the build instead of scrolling past, so the
+          # weekly flake update shows it before it becomes an error. Not for
+          # the base branch above: that only provides the comparison.
+          nix build ".#${ATTR}" --out-link result --print-build-logs --option abort-on-warn true
           echo "${HOST}: \`$(readlink result)\`" >> "$GITHUB_STEP_SUMMARY"
 
       # Uploads the few packages that have to be compiled, so the next run and

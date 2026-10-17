@@ -72,10 +72,9 @@ ssh narita 'journalctl -u reboot-for-kernel -n 3 --no-pager -o cat'   # what the
 ssh narita sudo notify "test"                                         # send a Telegram message
 ```
 
-The reboots' own outages are kept out of Telegram by a daily maintenance
-window in each Uptime Kuma: 04:35-04:55 on Nikko's (Narita's monitors), and
-05:05-05:25 and 05:35-05:55 on Narita's (Nikko's and Ginza's). A real outage
-in those minutes is only reported once the window ends.
+A reboot takes the host offline for about a minute. Uptime Kuma may report
+that too; there are no maintenance windows hiding it, since the noise has
+been minimal.
 
 To deploy by hand instead, for instance a branch CI has built but that
 isn't merged (stop the timer first, or it brings back `master`'s system),

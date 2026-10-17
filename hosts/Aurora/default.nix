@@ -40,6 +40,11 @@
   # in trouble (modules/nixos/disk-health.nix)
   custom.disk-health.enable = true;
 
+  # Says "Reboot required" at the end of a switch that installs a new
+  # kernel, and `needrestart` tells at any time
+  # (modules/nixos/reboot-notice.nix)
+  custom.reboot-notice.enable = true;
+
   # Automatically import ZFS pools on boot
   boot.zfs.extraPools = [
     "backup-pool"
