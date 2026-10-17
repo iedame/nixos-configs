@@ -12,6 +12,11 @@
   # default.nix); read by a root launchd job
   age.secrets."heartbeat-url".file = "${inputs.secrets}/kawagoe/heartbeat-url.age";
 
+  # Beszel agent settings: the hub's address, a universal token and the
+  # hub's public key (custom.beszel-agent, default.nix); the file the Linux
+  # hosts use
+  age.secrets."beszel-agent.env".file = "${inputs.secrets}/shared/beszel-agent.env.age";
+
   # agenix CLI for editing the secrets in ~/.config/nixos-secrets (identity:
   # ~/.ssh/agenix)
   environment.systemPackages = [
