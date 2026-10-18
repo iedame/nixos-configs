@@ -4,14 +4,14 @@ What to do when Aurora loses a disk, or all of them. Written 2026-10-13.
 
 **Most of this procedure has not been rehearsed.** The backups it relies on
 run every night and their repositories are checked monthly, but apart from
-reading the archives back, only the [Vaultwarden](#vaultwarden),
-[Paperless](#paperless) and [Forgejo](#forgejo) restores and a part of
+reading the archives back, only the [Paperless](#paperless) and
+[Forgejo](#forgejo) restores and a part of
 [Immich's](#immichs-database) have been tried, and those into scratch
 folders. Treat the other commands as the plan, and correct this file after
 the first real use.
 
 What is tested without anyone asking: once a month Aurora restores the
-newest Vaultwarden, Paperless and Forgejo archives, and Immich's database
+newest Paperless and Forgejo archives, and Immich's database
 with a sample of photos, into a scratch folder, and checks them (see
 "Backups" in [Aurora's README](../hosts/Aurora/README.md)). That shows the
 archives hold complete, undamaged copies. It doesn't replace the steps
@@ -37,7 +37,7 @@ each (`hosts/Aurora/backup.nix`):
 |---|---|---|
 | `immich` | `immich` | `/backup-pool/photos/immich` (photos, videos and Immich's own database dumps) and `/var/backup/postgresql/immich.sql`, a dump of its database made just before each backup |
 | `home` | `home` | `/backup-pool/documents` and the home folders listed in `backup.nix` |
-| `services` | `vaultwarden`, `paperless`, `forgejo` | Each service's own export of its data |
+| `services` | `paperless`, `forgejo` (and `vaultwarden` archives from before it moved to Ginza) | Each service's own export of its data |
 
 ## What you need that is not on Aurora
 
@@ -144,10 +144,9 @@ mkdir -p ~/.config/Yubico && pamu2fcfg -o pam://yubi > ~/.config/Yubico/u2f_keys
 In this order, each described under [Restoring one thing](#restoring-one-thing):
 
 1. The home folders, from `home`.
-2. Vaultwarden.
-3. Forgejo.
-4. Paperless.
-5. Immich's database. Its photos are on the pool and need nothing.
+2. Forgejo.
+3. Paperless.
+4. Immich's database. Its photos are on the pool and need nothing.
 
 Then sign in to 1Password and enable its SSH agent, and set up again what
 has no backup: Jellyfin, the \*arr apps, Syncthing's pairings, Steam.
@@ -183,11 +182,11 @@ this.
 ## Restoring one thing
 
 Every job has a command that already knows its repository, key and
-passphrase: `borg-job-<name>`. The three jobs in the `services` repository
+passphrase: `borg-job-<name>`. The two jobs in the `services` repository
 share it, so pick archives by their prefix.
 
 ```bash
-sudo borg-job-vaultwarden list --glob-archives 'vaultwarden-*'
+sudo borg-job-paperless list --glob-archives 'paperless-*'
 ```
 
 To look inside an archive without restoring it:
@@ -216,23 +215,11 @@ folders aren't in the backup.
 
 ### Vaultwarden
 
-The archive holds what Vaultwarden's own backup job wrote: a consistent
-`db.sqlite3`, the attachments, sends and its RSA keys.
-
-```bash
-sudo systemctl stop vaultwarden
-sudo cp -a /root/restore/var/local/vaultwarden/backup/. /var/lib/vaultwarden/
-sudo rm -f /var/lib/vaultwarden/db.sqlite3-wal /var/lib/vaultwarden/db.sqlite3-shm
-sudo chown -R vaultwarden:vaultwarden /var/lib/vaultwarden
-sudo systemctl start vaultwarden
-```
-
-Rehearsed on 2026-10-13, up to the copy: the newest archive was extracted
-(10 seconds, under 1 MB), its database passed SQLite's integrity check and
-had the same number of users, entries and attachments as the live one, the
-RSA key was identical, and a second Vaultwarden started on a scratch copy of
-the files and answered. Not tried: the copy over the real
-`/var/lib/vaultwarden`, and logging in to the restored copy.
+Vaultwarden moved to Ginza on 2026-10-18 and is no longer restored here:
+see [Ginza's README](../hosts/Ginza/README.md), "Vaultwarden". Its archives
+from before the move stay in the `services` repository under the prefix
+`vaultwarden` (`sudo borg-job-paperless list --glob-archives
+'vaultwarden-*'`).
 
 ### Forgejo
 
@@ -388,7 +375,7 @@ Recovery is done when all of these hold:
 
 - The Aurora monitor in Uptime Kuma is green.
 - `systemctl --failed` lists nothing.
-- `sudo systemctl start borgbackup-job-vaultwarden` succeeds, which proves
+- `sudo systemctl start borgbackup-job-paperless` succeeds, which proves
   the storage box, the key and the passphrase all still work.
 - `sudo systemctl start disk-health-full` succeeds on the new disk.
 - `systemctl list-timers 'borgbackup-*' 'disk-health*'` shows them all

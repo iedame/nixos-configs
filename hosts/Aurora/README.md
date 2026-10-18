@@ -21,7 +21,7 @@ progress, package diff, then activation).
 | `graphics.nix` | NVIDIA driver and OpenGL |
 | `gaming.nix` | Steam, gamemode, ArchiSteamFarm, launchers and emulators |
 | `backup.nix` | Off-site Borg backups of the photo library, documents and home folders |
-| `services.nix` | Caddy + ACME, Immich, Forgejo, Jellyfin and the *arr apps, Paperless, Vaultwarden, Syncthing, Podman |
+| `services.nix` | Caddy + ACME, Immich, Forgejo, Jellyfin and the *arr apps, Paperless, Syncthing, Podman |
 | `ssh.nix` | SSH server (Tailscale only) |
 | `secrets.nix` | agenix secrets |
 | `hardware-configuration.nix` | Generated hardware settings |
@@ -82,11 +82,10 @@ archives:
 |---|---|---|
 | `immich` | `/backup-pool/photos/immich` and a Postgres dump of Immich's database | `immich` |
 | `home` | `/backup-pool/documents` (except Paperless's files) and the home folders listed in `backup.nix` | `home` |
-| `vaultwarden` | The copy Vaultwarden's own backup job makes of its database, attachments and keys | `services` |
 | `paperless` | Paperless's export of every document with its metadata | `services` |
 | `forgejo` | Forgejo's dump of the repositories, LFS files, attachments and settings, and a Postgres dump of its database | `services` |
 
-The last three make that copy fresh before each run, and so does `immich`
+The last two make that copy fresh before each run, and so does `immich`
 for its database dump; Paperless is stopped for the moment its export
 takes.
 
@@ -111,7 +110,6 @@ something useless:
 
 | Test | Passes when |
 |---|---|
-| `vaultwarden` | The database passes SQLite's integrity check and holds an account, and the RSA key is there |
 | `paperless` | Every document in the export's manifest is there and matches the checksum recorded for it |
 | `forgejo` | Every repository passes `git fsck`, and the database dump loads into an empty Postgres |
 | `immich` | The database dump loads into an empty Postgres, and 25 photos picked at random from it are in the archive with the checksum Immich recorded for them |
@@ -228,14 +226,13 @@ Last done on 2026-10-13, for glibc 2.40 to 2.44: 3 seconds for `forgejo`,
 
 ## Secrets
 
-Ten secrets are managed with agenix (`secrets.nix`; the encrypted files are
+Nine secrets are managed with agenix (`secrets.nix`; the encrypted files are
 in `aurora/` of the private secrets repo), decrypted at activation into
 `/run/agenix/`:
 
 | Secret | Used by |
 |---|---|
 | `cloudflare-dns.env` | ACME DNS challenge for the wildcard certificate |
-| `vaultwarden.env` | Vaultwarden |
 | `heartbeat-url` | The health reports above |
 | `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
 | `borg-ssh-config`, `borg-ssh-key` | The backups: how to reach the storage box, and the key for it |
@@ -248,7 +245,6 @@ To confirm the services read them:
 sudo ls -l /run/agenix/
 
 # Each service's environment file points into /run/agenix
-systemctl show vaultwarden -p EnvironmentFiles
 systemctl show acme-order-renew-ts.wildtonberries.com -p EnvironmentFiles
 ```
 
@@ -258,8 +254,8 @@ rebuild:
 
 ```bash
 cd ~/.config/nixos-secrets
-agenix -e aurora/vaultwarden.env.age -i ~/.ssh/agenix
-git commit -am "update vaultwarden env" && git push
+agenix -e aurora/heartbeat-url.age -i ~/.ssh/agenix
+git commit -am "update Aurora's heartbeat URL" && git push
 cd ~/.config/nixos-configs && nix flake update secrets   # commit flake.lock, then on Aurora:
 update
 ```
