@@ -162,15 +162,6 @@ in
         extraConfig = "reverse_proxy ${tailscaleIp}:3000";
         useACMEHost = domain;
       };
-      "vault.${domain}" = {
-        extraConfig = ''
-          encode zstd gzip
-          reverse_proxy :${toString config.services.vaultwarden.config.ROCKET_PORT} {
-            header_up X-Real-IP {remote_host}
-          }
-        '';
-        useACMEHost = domain;
-      };
     };
   };
 
@@ -359,23 +350,6 @@ in
     exporter = {
       enable = true;
       onCalendar = null;
-    };
-  };
-
-  services.vaultwarden = {
-    enable = true;
-    backupDir = "/var/local/vaultwarden/backup";
-    # ADMIN_TOKEN etc. come from an agenix secret (secrets.nix) rather than
-    # the Nix store
-    environmentFile = config.age.secrets."vaultwarden.env".path;
-    config = {
-      # Refer to https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
-      DOMAIN = "https://vault.${domain}/";
-      SIGNUPS_ALLOWED = false;
-
-      ROCKET_ADDRESS = "127.0.0.1";
-      ROCKET_PORT = 8222;
-      ROCKET_LOG = "critical";
     };
   };
 

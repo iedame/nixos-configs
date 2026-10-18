@@ -198,21 +198,9 @@ in
       };
 
     # The small services share the "services" repository, one job each.
+    # Vaultwarden's job was here until it moved to Ginza (2026-10-18); its
+    # old archives (prefix "vaultwarden") stay in the repository.
     #
-    # Vaultwarden: the consistent copy of its database, attachments and
-    # keys that its own backup job makes (services.nix, backupDir)
-    vaultwarden =
-      job {
-        repo = "services";
-        prefix = "vaultwarden";
-      }
-      // {
-        paths = [ config.services.vaultwarden.backupDir ];
-        preHook = refresh "backup-vaultwarden.service";
-        # The first job of a new repository creates it
-        doInit = true;
-      };
-
     # Paperless: its export of all documents and their metadata
     # (services.nix, exporter). Paperless is stopped while that runs.
     paperless =
@@ -223,6 +211,8 @@ in
       // {
         paths = [ config.services.paperless.exporter.directory ];
         preHook = refresh "paperless-exporter.service";
+        # The first job of a new repository creates it
+        doInit = true;
       };
 
     # Forgejo: its dump of the repositories, LFS files, attachments and
@@ -241,10 +231,9 @@ in
       };
   };
 
-  # The vaultwarden job is the one that creates the shared repository, so
-  # the others using it go after it when they start together
-  systemd.services.borgbackup-job-paperless.after = [ "borgbackup-job-vaultwarden.service" ];
-  systemd.services.borgbackup-job-forgejo.after = [ "borgbackup-job-vaultwarden.service" ];
+  # The paperless job is the one that creates the shared repository, so
+  # the other using it goes after it when they start together
+  systemd.services.borgbackup-job-forgejo.after = [ "borgbackup-job-paperless.service" ];
 
   # Once a month, a consistency check of each repository (done on the
   # storage box itself, so nothing is downloaded) and of its newest
@@ -298,29 +287,6 @@ in
   # load, a file that doesn't match its recorded checksum. They don't start
   # the services on the restored data; docs/aurora-recovery.md has what was
   # tried by hand.
-
-  # Vaultwarden: the database passes SQLite's own integrity check and holds
-  # at least one account, and the RSA key is there
-  systemd.services.borgbackup-restore-test-vaultwarden = restoreTest "vaultwarden" {
-    packages = [ pkgs.sqlite ];
-    script = ''
-      $borg extract --lock-wait 3600 "::$archive"
-      copy=$scratch${config.services.vaultwarden.backupDir}
-      result=$(sqlite3 -readonly "$copy/db.sqlite3" 'PRAGMA integrity_check;')
-      if [ "$result" != ok ]; then
-        echo "the restored database fails its integrity check: $result"
-        exit 1
-      fi
-      users=$(sqlite3 -readonly "$copy/db.sqlite3" 'SELECT count(*) FROM users;')
-      entries=$(sqlite3 -readonly "$copy/db.sqlite3" 'SELECT count(*) FROM ciphers;')
-      if [ "$users" -lt 1 ] || [ ! -s "$copy/rsa_key.pem" ]; then
-        echo "the restored copy has no account or no RSA key"
-        exit 1
-      fi
-      echo "restored and intact: $users account(s), $entries entries"
-    '';
-  };
-  systemd.timers.borgbackup-restore-test-vaultwarden = restoreTestTimer "vaultwarden";
 
   # Paperless: the export's manifest can be read, and every document it
   # lists is there with the checksum the manifest records for it
