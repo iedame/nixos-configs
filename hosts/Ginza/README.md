@@ -5,8 +5,10 @@ aarch64-linux: 4 Arm cores and 24 GB of memory, the whole free A1
 allowance). It runs **linkding**, the bookmark manager, moved here from
 the Mac: `https://linkding.<tailnet>.ts.net`, the Tailscale Service
 `svc:linkding`; **Beszel**'s hub, a dashboard of all the hosts:
-`https://beszel.<tailnet>.ts.net`, `svc:beszel`; and **Atuin**'s sync
-server for shell history: `https://atuin.<tailnet>.ts.net`, `svc:atuin`.
+`https://beszel.<tailnet>.ts.net`, `svc:beszel`; **Atuin**'s sync
+server for shell history: `https://atuin.<tailnet>.ts.net`, `svc:atuin`;
+and **Vaultwarden**, the password manager, moved here from Aurora:
+`https://vault.<tailnet>.ts.net`, `svc:vault`.
 
 The machine itself (disk, boot loader, admin account) is described in
 `modules/nixos/oracle-a1.nix` and `modules/nixos/oracle.nix`, which it
@@ -134,3 +136,60 @@ atuin import auto && atuin sync
 Registration is closed (`services.atuin.openRegistration`, `default.nix`):
 the account exists, and new machines only log in. To make another account,
 open it for a moment the same way.
+
+## Vaultwarden
+
+The server (`services.vaultwarden`) keeps everything in
+`/var/lib/vaultwarden`: the SQLite database, the RSA key that signs
+logins, and attachments and sends once used. Its address and admin token
+are in the agenix secret `ginza/vaultwarden.env.age` (`DOMAIN=` and
+`ADMIN_TOKEN=`, otherwise the same settings Aurora had).
+
+Once, in the admin console: define the service `svc:vault` (port 443),
+approve this host for it, and let the tags of the devices that use the
+vault reach it.
+
+### Moving the data from Aurora
+
+Aurora's server stops first, so nothing changes in its database during
+the copy. The user IDs differ between the hosts, hence the `chown`. The copy keeps the RSA key, so the clients' sessions remain
+valid, and the database, so the accounts and items are the same.
+
+```bash
+ssh -t aurora 'sudo systemctl stop vaultwarden && sudo tar -C /var/lib -czf /tmp/vaultwarden.tar.gz vaultwarden && sudo chown haoji /tmp/vaultwarden.tar.gz'
+scp aurora:/tmp/vaultwarden.tar.gz ginza:/tmp/
+ssh -t ginza 'sudo systemctl stop vaultwarden && sudo rm -rf /var/lib/vaultwarden.old && sudo mv /var/lib/vaultwarden /var/lib/vaultwarden.old && sudo tar -C /var/lib -xzf /tmp/vaultwarden.tar.gz && sudo chown -R vaultwarden:vaultwarden /var/lib/vaultwarden && sudo systemctl start vaultwarden'
+ssh aurora rm /tmp/vaultwarden.tar.gz
+ssh ginza rm /tmp/vaultwarden.tar.gz
+```
+
+Then each client's server address changes to the new one. A YubiKey or
+passkey registered as two-step login is tied to the old address: log in
+with another method or the recovery code, and register it again.
+
+### Backup
+
+Every night it is backed up, encrypted, to the private R2 backups bucket
+(`custom.vaultwarden-backup`, `modules/nixos/vaultwarden-backup.nix`), like
+linkding, with the same R2 token and password (`shared/backup.env.age`).
+Once a week the newest copy is restored into a scratch folder and checked:
+database intact, accounts and items in it, RSA key present, every file in
+the repository readable.
+
+```bash
+ssh ginza sudo restic-vaultwarden snapshots                   # the copies
+ssh ginza sudo systemctl start vaultwarden-restore-test     # test a restore now
+```
+
+To restore, the newest copy into a scratch folder, then over the live
+data with Vaultwarden stopped:
+
+```bash
+sudo restic-vaultwarden restore latest --target /tmp/restore
+sudo systemctl stop vaultwarden
+sudo cp -a /tmp/restore/var/backup/vaultwarden/. /var/lib/vaultwarden/
+sudo rm -f /var/lib/vaultwarden/db.sqlite3-wal /var/lib/vaultwarden/db.sqlite3-shm
+sudo chown -R vaultwarden:vaultwarden /var/lib/vaultwarden
+sudo systemctl start vaultwarden
+sudo rm -rf /tmp/restore
+```

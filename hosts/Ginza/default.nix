@@ -32,6 +32,30 @@
   services.beszel.hub.enable = true;
   custom.tailscale-services.beszel.target = "http://127.0.0.1:${toString config.services.beszel.hub.port}";
 
+  # Vaultwarden, moving here from Aurora so the passwords don't depend on
+  # the desktop being on. Like linkding, it listens on this machine only and
+  # is published as the Tailscale Service svc:vault
+  # (https://vault.<tailnet>.ts.net). The environment file holds DOMAIN
+  # (that address, which names the tailnet) and the admin token, so it is
+  # an agenix secret.
+  services.vaultwarden = {
+    enable = true;
+    environmentFile = config.age.secrets."vaultwarden.env".path;
+    config = {
+      SIGNUPS_ALLOWED = false;
+      ROCKET_ADDRESS = "127.0.0.1";
+      ROCKET_PORT = 8222;
+      ROCKET_LOG = "critical";
+    };
+  };
+  custom.tailscale-services.vault.target = "http://127.0.0.1:${toString config.services.vaultwarden.config.ROCKET_PORT}";
+  # Backed up every night, encrypted, to the private R2 bucket, with a
+  # weekly restore test (modules/nixos/vaultwarden-backup.nix)
+  custom.vaultwarden-backup = {
+    enable = true;
+    environmentFile = config.age.secrets."backup.env".path;
+  };
+
   # Atuin's sync server: shell history shared between Kawagoe, Akihabara
   # and Aurora, end-to-end encrypted by the clients
   # (modules/home-manager/atuin.nix). Its database is SQLite, so no

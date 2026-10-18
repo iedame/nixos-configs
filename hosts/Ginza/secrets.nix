@@ -26,5 +26,9 @@
     # Beszel agent settings: the hub's address, a universal token and the
     # hub's public key (custom.beszel-agent); the same file on every host
     "beszel-agent.env".file = "${inputs.secrets}/shared/beszel-agent.env.age";
+    # Vaultwarden's settings that stay out of the repository: DOMAIN (its
+    # Tailscale Service address, which names the tailnet) and ADMIN_TOKEN;
+    # the same as Aurora's otherwise
+    "vaultwarden.env".file = "${inputs.secrets}/ginza/vaultwarden.env.age";
   };
 }
