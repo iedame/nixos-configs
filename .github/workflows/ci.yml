@@ -120,6 +120,11 @@ jobs:
             os: ubuntu-24.04-arm
             attr: nixosConfigurations.Ginza.config.system.build.toplevel
             cache_all: true
+          # The Hetzner Arm server: the same as Ginza
+          - host: Nara
+            os: ubuntu-24.04-arm
+            attr: nixosConfigurations.Nara.config.system.build.toplevel
+            cache_all: true
           - host: Kawagoe
             os: macos-latest
             attr: darwinConfigurations.Kawagoe.system
