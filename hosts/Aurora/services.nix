@@ -65,6 +65,11 @@ in
       # tailscale0 only (below), and the tailnet's access rules decide who
       # reaches it.
       IMMICH_HOST = lib.mkForce "0.0.0.0";
+      # Idle connections stay open longer than Nara's client keeps them
+      # (about 4 s). With the default 2 s, a request sent on a connection
+      # Aurora was just closing failed as "other side closed", more often
+      # with the ~230 ms between Helsinki and Aurora.
+      MACHINE_LEARNING_HTTP_KEEPALIVE_TIMEOUT_S = "30";
     };
   };
 
