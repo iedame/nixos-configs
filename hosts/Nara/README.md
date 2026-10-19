@@ -3,9 +3,8 @@
 NixOS on a Hetzner Cloud CAX11 (2 Arm cores, 4 GB of memory, a 40 GB disk;
 aarch64-linux) in Helsinki, in the same data centre as the storage boxes.
 It is meant for Immich, with the photos on a storage box mounted over SMB,
-and maybe Paperless later (see the plan on the list). For now it runs the
-base system, a heartbeat to Narita's Uptime Kuma, and the storage box
-mount that Immich will use.
+and maybe Paperless later (see the plan on the list). It also runs a
+heartbeat to Narita's Uptime Kuma.
 
 The machine itself (disk, network, boot loader, admin account) is described
 in `modules/nixos/hetzner.nix` and `modules/nixos/cloud-server.nix`, which
@@ -33,6 +32,36 @@ is made from the username, so the account name isn't in this repository.
 ```bash
 systemctl status immich-library-mount   # mounted?
 df -h /mnt/immich-library               # space on the box
+```
+
+## Immich
+
+`immich.nix`: Immich listens on this machine only and is published as the
+Tailscale Service svc:immich, at `https://immich.<tailnet>.ts.net`. Its
+media folder is the storage box share above; Postgres (18, from
+`system.stateVersion`) and Redis are on the local disk.
+
+Machine learning (faces, smart search, duplicates) runs on Aurora, which
+serves it on its tailnet address, port 3003. When Aurora is off, uploads,
+browsing and the timeline work as usual; the machine-learning jobs for new
+photos wait and catch up once it is back, and smart search doesn't answer.
+
+Besides the config:
+
+1. In Tailscale's admin console: define svc:immich (TCP 443), approve
+   Nara for it, and add access rules that let your devices reach
+   svc:immich and Nara reach Aurora on TCP 3003.
+2. In Immich, under Administration, Settings:
+   - Machine Learning, URL: `http://<Aurora's Tailscale address>:3003`
+     (`lib/hosts.nix`). A fresh install already has it; a database
+     restored from Aurora keeps its old `localhost` one.
+   - Job settings: concurrency 1 for thumbnail generation and video
+     conversion, so the two cores aren't swamped.
+   - Server, External domain: the svc:immich address, for shared links.
+
+```bash
+systemctl status immich-server
+curl -s http://<Aurora's Tailscale address>:3003/ping   # "pong" while Aurora is on
 ```
 
 ## How it's updated

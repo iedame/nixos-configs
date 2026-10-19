@@ -29,11 +29,13 @@ in
     };
   };
 
-  # Caddy is only reachable over Tailscale
+  # Caddy, and Immich's machine learning for Nara (3003), are only
+  # reachable over Tailscale
   networking.firewall.interfaces."tailscale0" = {
     allowedTCPPorts = [
       80
       443
+      3003
     ];
   };
 
@@ -58,6 +60,11 @@ in
     machine-learning.environment = {
       HF_XET_CACHE = "/var/cache/immich/huggingface-xet";
       XDG_CACHE_HOME = "/var/cache/immich";
+      # Also serves Nara's Immich, over Tailscale (hosts/Nara/immich.nix).
+      # It has no login of its own: the firewall opens its port on
+      # tailscale0 only (below), and the tailnet's access rules decide who
+      # reaches it.
+      IMMICH_HOST = lib.mkForce "0.0.0.0";
     };
   };
 

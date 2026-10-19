@@ -38,9 +38,10 @@ in
       user=$(sed -n 's/^username=//p' ${credentials})
       mkdir -p ${mountPoint}
       mountpoint -q ${mountPoint} && exit 0
-      # seal: SMB3 encryption, as the traffic crosses Hetzner's network
+      # seal: SMB3 encryption, as the traffic crosses Hetzner's network.
+      # The share has no Unix owners, so every file shows as Immich's.
       ${lib.getExe' pkgs.cifs-utils "mount.cifs"} "//$user.your-storagebox.de/$user" ${mountPoint} \
-        -o credentials=${credentials},seal,iocharset=utf8,file_mode=0640,dir_mode=0750
+        -o credentials=${credentials},seal,iocharset=utf8,uid=immich,gid=immich,file_mode=0640,dir_mode=0750
     '';
   };
 }
