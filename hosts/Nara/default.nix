@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./immich.nix
     ./secrets.nix
     ./storage-box.nix
   ];
