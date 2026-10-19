@@ -21,7 +21,7 @@ progress, package diff, then activation).
 | `graphics.nix` | NVIDIA driver and OpenGL |
 | `gaming.nix` | Steam, gamemode, ArchiSteamFarm, launchers and emulators |
 | `backup.nix` | Off-site Borg backups of the photo library, documents and home folders |
-| `services.nix` | Caddy + ACME, Immich, Jellyfin and the *arr apps, Paperless, Syncthing, Podman |
+| `services.nix` | Immich's machine learning (for Nara), Jellyfin and the *arr apps, Paperless, Syncthing, Podman |
 | `ssh.nix` | SSH server (Tailscale only) |
 | `secrets.nix` | agenix secrets |
 | `hardware-configuration.nix` | Generated hardware settings |
@@ -34,8 +34,10 @@ progress, package diff, then activation).
 - **1Password SSH agent**: must be enabled in the app (Settings → Developer →
   "Use the SSH agent"). `ssh`, `git push` and commit signing depend on it;
   it's the one piece that isn't declarative.
-- **Services**: reached as `<name>.ts.wildtonberries.com` through Caddy, on
-  the Tailscale address set at the top of `default.nix`.
+- **Services**: reached on the Tailscale address set at the top of
+  `default.nix`. Immich moved to Nara (2026-10-19); this host still runs
+  its machine learning, on port 3003 over Tailscale, which Nara's Immich
+  uses (`hosts/Nara/README.md`, "Immich").
 
 ## Health reports
 
@@ -202,8 +204,7 @@ sudo postgres-refresh-collation --fix
 It makes a fresh dump of Immich's database, then takes one
 database at a time, smallest first: stops the services that use it,
 rebuilds its indexes, records the new version and starts the services
-again. It ends by running the check, which clears the alert. Immich is
-down for well under a minute.
+again. It ends by running the check, which clears the alert.
 
 The command (`modules/nixos/postgres-collation.nix`) knows which services
 use which database from the `databaseServices` list in `services.nix`
@@ -214,9 +215,7 @@ and rebuild.
 By hand, the same thing for one database is:
 
 ```bash
-sudo systemctl stop immich-server immich-machine-learning
 sudo -u postgres psql -d immich -c 'REINDEX DATABASE immich' -c 'REINDEX SYSTEM immich' -c 'ALTER DATABASE immich REFRESH COLLATION VERSION'
-sudo systemctl start immich-server immich-machine-learning
 sudo systemctl start postgres-collation-check
 ```
 
@@ -228,13 +227,12 @@ Last done on 2026-10-13, for glibc 2.40 to 2.44: 3 seconds for `forgejo`,
 
 ## Secrets
 
-Nine secrets are managed with agenix (`secrets.nix`; the encrypted files are
+Eight secrets are managed with agenix (`secrets.nix`; the encrypted files are
 in `aurora/` of the private secrets repo), decrypted at activation into
 `/run/agenix/`:
 
 | Secret | Used by |
 |---|---|
-| `cloudflare-dns.env` | ACME DNS challenge for the wildcard certificate |
 | `heartbeat-url` | The health reports above |
 | `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
 | `borg-ssh-config`, `borg-ssh-key` | The backups: how to reach the storage box, and the key for it |
@@ -247,7 +245,7 @@ To confirm the services read them:
 sudo ls -l /run/agenix/
 
 # Each service's environment file points into /run/agenix
-systemctl show acme-order-renew-ts.wildtonberries.com -p EnvironmentFiles
+systemctl show beszel-agent -p EnvironmentFiles
 ```
 
 To change one, edit it on the Mac, where the editing key lives (in the

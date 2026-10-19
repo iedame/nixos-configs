@@ -5,65 +5,26 @@
   ...
 }:
 
-let
-  # Aurora's Tailscale address; services bind here so they're tailnet-only
-  tailscaleIp = (import ../../lib/hosts.nix).hosts.Aurora.address;
-  # Services behind Caddy live under this domain (wildcard ACME cert)
-  domain = "ts.wildtonberries.com";
-in
-
 {
   # Enable Syncthing
   services.syncthing = {
     enable = true;
   };
 
-  # Enable Caddy
-  services.caddy = {
-    enable = true;
-    virtualHosts = {
-      "immich.${domain}" = {
-        extraConfig = "reverse_proxy ${tailscaleIp}:2283";
-        useACMEHost = domain;
-      };
-    };
-  };
-
-  # Caddy, and Immich's machine learning for Nara (3003), are only
-  # reachable over Tailscale
-  networking.firewall.interfaces."tailscale0" = {
-    allowedTCPPorts = [
-      80
-      443
-      3003
-    ];
-  };
-
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = "git@ieda.me";
-    certs = {
-      ${domain} = {
-        domain = "*.${domain}";
-        group = "caddy";
-        dnsProvider = "cloudflare";
-        environmentFile = config.age.secrets."cloudflare-dns.env".path;
-      };
-    };
-  };
-
+  # Immich moved to Nara (2026-10-19). What stays here is its machine
+  # learning, which Nara uses, and, until the mirror on the external pool
+  # replaces the Borg backup, the database and the old media folder.
   services.immich = {
     enable = true;
-    host = tailscaleIp;
-    port = 2283;
     mediaLocation = "/backup-pool/photos/immich/";
+    # Only the server used Redis
+    redis.enable = false;
     machine-learning.environment = {
       HF_XET_CACHE = "/var/cache/immich/huggingface-xet";
       XDG_CACHE_HOME = "/var/cache/immich";
-      # Also serves Nara's Immich, over Tailscale (hosts/Nara/immich.nix).
-      # It has no login of its own: the firewall opens its port on
-      # tailscale0 only (below), and the tailnet's access rules decide who
-      # reaches it.
+      # Serves Nara's Immich, over Tailscale (hosts/Nara/immich.nix). It
+      # has no login of its own: the firewall opens its port on tailscale0
+      # only (below), and the tailnet's access rules decide who reaches it.
       IMMICH_HOST = lib.mkForce "0.0.0.0";
       # Idle connections stay open longer than Nara's client keeps them
       # (about 4 s). With the default 2 s, a request sent on a connection
@@ -72,25 +33,23 @@ in
       MACHINE_LEARNING_HTTP_KEEPALIVE_TIMEOUT_S = "30";
     };
   };
+  # The server itself no longer runs here
+  systemd.services.immich-server.enable = false;
 
-  # Allowing immich group to have mediaLocation backup permissions
-  systemd.services.immich-server.serviceConfig = {
-    # UMask 007 overrides the module's default (0077) for the server process,
-    # ensuring new files get group read/write (660/770).
-    UMask = lib.mkForce "007";
-  };
+  # Immich's machine learning for Nara is only reachable over Tailscale
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [ 3003 ];
 
-  # Same for main Immich folder on reboot
+  # The old media folder keeps the modes it had (group-readable), so the
+  # backups and haoji (in the immich group) can still read it
   systemd.tmpfiles.settings = {
     immich = {
       # Override the setting from the immich module
       # 'e' means ensure existence and correct attributes
       "/backup-pool/photos/immich/" = {
-        # Replace with your actual mediaLocation if different
         e = {
           user = config.services.immich.user;
           group = config.services.immich.group;
-          mode = lib.mkForce "0750"; # Example: Owner read/write/execute, Group read/execute, Others none
+          mode = lib.mkForce "0750";
         };
       };
     };
@@ -127,10 +86,9 @@ in
       # Forgejo moved to Ginza (2026-10-19); its old database stays here
       # until it is dropped
       forgejo = [ ];
-      immich = [
-        "immich-server.service"
-        "immich-machine-learning.service"
-      ];
+      # Immich moved to Nara (2026-10-19); its database stays until the
+      # mirror replaces the Borg backup
+      immich = [ ];
       # Left over from an OnlyOffice document server; nothing runs on it
       onlyoffice = [ ];
       postgres = [ ];

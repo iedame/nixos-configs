@@ -8,7 +8,7 @@ home-manager. Layout inspired by
 
 | Host | Platform | Role |
 |---|---|---|
-| [Aurora](hosts/Aurora/README.md) | NixOS, x86_64-linux | Desktop, gaming, home server (Immich, Jellyfin, Paperless, …) |
+| [Aurora](hosts/Aurora/README.md) | NixOS, x86_64-linux | Desktop, gaming, home server (Jellyfin, Paperless, Immich's machine learning, …) |
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
 | [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), updates itself from this repo |
 | [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), the same set-up as Tsukuba |
