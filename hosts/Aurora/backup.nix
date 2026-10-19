@@ -198,8 +198,9 @@ in
       };
 
     # The small services share the "services" repository, one job each.
-    # Vaultwarden's job was here until it moved to Ginza (2026-10-18); its
-    # old archives (prefix "vaultwarden") stay in the repository.
+    # Vaultwarden's and Forgejo's jobs were here until they moved to Ginza
+    # (2026-10-18 and -19); their old archives (prefixes "vaultwarden" and
+    # "forgejo") stay in the repository.
     #
     # Paperless: its export of all documents and their metadata
     # (services.nix, exporter). Paperless is stopped while that runs.
@@ -214,26 +215,7 @@ in
         # The first job of a new repository creates it
         doInit = true;
       };
-
-    # Forgejo: its dump of the repositories, LFS files, attachments and
-    # settings, and a native dump of its database (services.nix)
-    forgejo =
-      job {
-        repo = "services";
-        prefix = "forgejo";
-      }
-      // {
-        paths = [
-          config.services.forgejo.dump.backupDir
-          "${config.services.postgresqlBackup.location}/forgejo.sql"
-        ];
-        preHook = refresh "forgejo-dump.service postgresqlBackup-forgejo.service";
-      };
   };
-
-  # The paperless job is the one that creates the shared repository, so
-  # the other using it goes after it when they start together
-  systemd.services.borgbackup-job-forgejo.after = [ "borgbackup-job-paperless.service" ];
 
   # Once a month, a consistency check of each repository (done on the
   # storage box itself, so nothing is downloaded) and of its newest
@@ -320,48 +302,6 @@ in
     '';
   };
   systemd.timers.borgbackup-restore-test-paperless = restoreTestTimer "paperless";
-
-  # Forgejo: every repository in its dump passes git's own check, and the
-  # database dump loads into an empty Postgres without an error
-  systemd.services.borgbackup-restore-test-forgejo = restoreTest "forgejo" {
-    packages = [
-      pkgs.git
-      pkgs.gnutar
-      postgres
-    ];
-    script = ''
-      $borg extract --lock-wait 3600 "::$archive"
-      tar=$(find "$scratch${config.services.forgejo.dump.backupDir}" -name '*.tar' | sort | tail -n 1)
-      mkdir dump
-      tar -xf "$tar" -C dump
-      repositories=0
-      bad=0
-      while IFS= read -r repository; do
-        repositories=$((repositories + 1))
-        if ! git -c safe.directory='*' --git-dir="$repository" fsck --no-dangling --no-progress > /dev/null 2>&1; then
-          echo "repository $repositories of the dump fails git fsck"
-          bad=$((bad + 1))
-        fi
-      done < <(find dump/repos -type d -name '*.git' -prune | sort)
-      if [ "$repositories" -lt 1 ] || [ "$bad" -gt 0 ]; then
-        echo "$bad of $repositories repositories are damaged or there are none"
-        exit 1
-      fi
-    ''
-    + scratchPostgres
-    + ''
-      # The dump re-creates the database but not its owner
-      sql --dbname=postgres --command='CREATE ROLE ${config.services.forgejo.database.user} LOGIN'
-      sql --dbname=postgres --set ON_ERROR_STOP=1 < "$scratch${dumps}/forgejo.sql" > /dev/null
-      known=$(sql --dbname=${config.services.forgejo.database.name} --command='SELECT count(*) FROM repository')
-      if [ "$known" -lt 1 ]; then
-        echo "the restored database knows no repositories"
-        exit 1
-      fi
-      echo "restored and intact: $repositories repositories on disk (wikis included), $known in the database"
-    '';
-  };
-  systemd.timers.borgbackup-restore-test-forgejo = restoreTestTimer "forgejo";
 
   # Immich: the database dump loads into an empty Postgres, and 25 photos
   # picked at random from that database are in the archive with the

@@ -21,7 +21,7 @@ progress, package diff, then activation).
 | `graphics.nix` | NVIDIA driver and OpenGL |
 | `gaming.nix` | Steam, gamemode, ArchiSteamFarm, launchers and emulators |
 | `backup.nix` | Off-site Borg backups of the photo library, documents and home folders |
-| `services.nix` | Caddy + ACME, Immich, Forgejo, Jellyfin and the *arr apps, Paperless, Syncthing, Podman |
+| `services.nix` | Caddy + ACME, Immich, Jellyfin and the *arr apps, Paperless, Syncthing, Podman |
 | `ssh.nix` | SSH server (Tailscale only) |
 | `secrets.nix` | agenix secrets |
 | `hardware-configuration.nix` | Generated hardware settings |
@@ -83,9 +83,8 @@ archives:
 | `immich` | `/backup-pool/photos/immich` and a Postgres dump of Immich's database | `immich` |
 | `home` | `/backup-pool/documents` (except Paperless's files) and the home folders listed in `backup.nix` | `home` |
 | `paperless` | Paperless's export of every document with its metadata | `services` |
-| `forgejo` | Forgejo's dump of the repositories, LFS files, attachments and settings, and a Postgres dump of its database | `services` |
 
-The last two make that copy fresh before each run, and so does `immich`
+The last one makes that copy fresh before each run, and so does `immich`
 for its database dump; Paperless is stopped for the moment its export
 takes.
 
@@ -111,7 +110,6 @@ something useless:
 | Test | Passes when |
 |---|---|
 | `paperless` | Every document in the export's manifest is there and matches the checksum recorded for it |
-| `forgejo` | Every repository passes `git fsck`, and the database dump loads into an empty Postgres |
 | `immich` | The database dump loads into an empty Postgres, and 25 photos picked at random from it are in the archive with the checksum Immich recorded for them |
 
 They fail, and show up in the health reports, only on such a hard fault;
@@ -157,6 +155,9 @@ passphrase its backup can't be read; both are also in 1Password.
 
 ## Postgres after a glibc update
 
+The same applies to Ginza, which runs Forgejo's database; its README
+points here.
+
 Postgres sorts text by the rules of the system's C library (glibc) and
 stores its text indexes in that order. Each database records the glibc
 version it was last indexed under. When a NixOS update brings a newer
@@ -187,7 +188,6 @@ sudo postgres-refresh-collation
 
 ```
 database | indexed under glibc | system glibc | state
-forgejo | 2.44 | 2.44 | ok
 immich | 2.44 | 2.44 | ok
 template0 | none | 2.44 | never warns
 ...
@@ -199,11 +199,11 @@ To fix the ones marked `BEHIND`:
 sudo postgres-refresh-collation --fix
 ```
 
-It makes fresh dumps of Forgejo's and Immich's databases, then takes one
+It makes a fresh dump of Immich's database, then takes one
 database at a time, smallest first: stops the services that use it,
 rebuilds its indexes, records the new version and starts the services
-again. It ends by running the check, which clears the alert. Forgejo and
-Immich are each down for well under a minute.
+again. It ends by running the check, which clears the alert. Immich is
+down for well under a minute.
 
 The command (`modules/nixos/postgres-collation.nix`) knows which services
 use which database from the `databaseServices` list in `services.nix`
@@ -214,9 +214,9 @@ and rebuild.
 By hand, the same thing for one database is:
 
 ```bash
-sudo systemctl stop forgejo
-sudo -u postgres psql -d forgejo -c 'REINDEX DATABASE forgejo' -c 'REINDEX SYSTEM forgejo' -c 'ALTER DATABASE forgejo REFRESH COLLATION VERSION'
-sudo systemctl start forgejo
+sudo systemctl stop immich-server immich-machine-learning
+sudo -u postgres psql -d immich -c 'REINDEX DATABASE immich' -c 'REINDEX SYSTEM immich' -c 'ALTER DATABASE immich REFRESH COLLATION VERSION'
+sudo systemctl start immich-server immich-machine-learning
 sudo systemctl start postgres-collation-check
 ```
 
