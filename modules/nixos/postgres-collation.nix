@@ -75,7 +75,8 @@ let
       ${lib.optionalString backups.enable ''
         echo
         echo "== fresh dumps first"
-        for database in ${toString backups.databases}; do
+        dumped=(${lib.escapeShellArgs backups.databases})
+        for database in "''${dumped[@]}"; do
           if echo "$behind" | grep -q -x "$database"; then
             systemctl start --wait "postgresqlBackup-$database.service"
             echo "$database: dumped"
