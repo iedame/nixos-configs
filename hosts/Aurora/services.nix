@@ -26,10 +26,6 @@ in
         extraConfig = "reverse_proxy ${tailscaleIp}:2283";
         useACMEHost = domain;
       };
-      "git.${domain}" = {
-        extraConfig = "reverse_proxy ${tailscaleIp}:3000";
-        useACMEHost = domain;
-      };
     };
   };
 
@@ -92,47 +88,14 @@ in
     home = "/var/cache/immich";
   };
 
-  services.forgejo = {
-    enable = true;
-    package = pkgs.forgejo;
-    database.type = "postgres";
-    lfs.enable = true;
-    settings = {
-      server = {
-        DOMAIN = tailscaleIp;
-        ROOT_URL = "https://git.${domain}/";
-        HTTP_PORT = 3000;
-      };
-      service.DISABLE_REGISTRATION = true;
-      service.REQUIRE_SIGNIN_VIEW = true;
-      actions = {
-        ENABLED = true;
-        DEFAULT_ACTIONS_URL = "github";
-      };
-    };
-    # Forgejo's own dump of the repositories, LFS files, attachments and
-    # settings, for the off-site backup (backup.nix), which also starts it
-    # before each run. An uncompressed archive, so that the backup can
-    # tell what changed since the previous one; dumps older than two days
-    # are removed from this disk.
-    dump = {
-      enable = true;
-      type = "tar";
-      age = "2d";
-    };
-  };
-
-  # Native dumps of the databases of Forgejo and Immich. Forgejo's
-  # documentation recommends relying on this one for a restore. Immich also
-  # dumps its own database into its media folder, but only when this
-  # machine is on at the time set in Immich, so those can be days old. No
-  # timer: the backup jobs start the dumps (backup.nix).
+  # A native dump of Immich's database. Immich also dumps its own database
+  # into its media folder, but only when this machine is on at the time set
+  # in Immich, so those can be days old. No timer: the backup job starts
+  # the dump (backup.nix). Forgejo's was here until it moved to Ginza
+  # (2026-10-19).
   services.postgresqlBackup = {
     enable = true;
-    databases = [
-      "forgejo"
-      "immich"
-    ];
+    databases = [ "immich" ];
     startAt = [ ];
     compression = "none";
   };
@@ -149,7 +112,9 @@ in
   custom.postgres-collation = {
     enable = true;
     databaseServices = {
-      forgejo = [ "forgejo.service" ];
+      # Forgejo moved to Ginza (2026-10-19); its old database stays here
+      # until it is dropped
+      forgejo = [ ];
       immich = [
         "immich-server.service"
         "immich-machine-learning.service"

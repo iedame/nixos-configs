@@ -4,14 +4,14 @@ What to do when Aurora loses a disk, or all of them. Written 2026-10-13.
 
 **Most of this procedure has not been rehearsed.** The backups it relies on
 run every night and their repositories are checked monthly, but apart from
-reading the archives back, only the [Paperless](#paperless) and
-[Forgejo](#forgejo) restores and a part of
+reading the archives back, only the [Paperless](#paperless) restore and
+a part of
 [Immich's](#immichs-database) have been tried, and those into scratch
 folders. Treat the other commands as the plan, and correct this file after
 the first real use.
 
 What is tested without anyone asking: once a month Aurora restores the
-newest Paperless and Forgejo archives, and Immich's database
+newest Paperless archive, and Immich's database
 with a sample of photos, into a scratch folder, and checks them (see
 "Backups" in [Aurora's README](../hosts/Aurora/README.md)). That shows the
 archives hold complete, undamaged copies. It doesn't replace the steps
@@ -37,7 +37,7 @@ each (`hosts/Aurora/backup.nix`):
 |---|---|---|
 | `immich` | `immich` | `/backup-pool/photos/immich` (photos, videos and Immich's own database dumps) and `/var/backup/postgresql/immich.sql`, a dump of its database made just before each backup |
 | `home` | `home` | `/backup-pool/documents` and the home folders listed in `backup.nix` |
-| `services` | `paperless`, `forgejo` (and `vaultwarden` archives from before it moved to Ginza) | Each service's own export of its data |
+| `services` | `paperless` (and `vaultwarden` and `forgejo` archives from before they moved to Ginza) | Each service's own export of its data |
 
 ## What you need that is not on Aurora
 
@@ -144,9 +144,8 @@ mkdir -p ~/.config/Yubico && pamu2fcfg -o pam://yubi > ~/.config/Yubico/u2f_keys
 In this order, each described under [Restoring one thing](#restoring-one-thing):
 
 1. The home folders, from `home`.
-2. Forgejo.
-3. Paperless.
-4. Immich's database. Its photos are on the pool and need nothing.
+2. Paperless.
+3. Immich's database. Its photos are on the pool and need nothing.
 
 Then sign in to 1Password and enable its SSH agent, and set up again what
 has no backup: Jellyfin, the \*arr apps, Syncthing's pairings, Steam.
@@ -182,8 +181,9 @@ this.
 ## Restoring one thing
 
 Every job has a command that already knows its repository, key and
-passphrase: `borg-job-<name>`. The two jobs in the `services` repository
-share it, so pick archives by their prefix.
+passphrase: `borg-job-<name>`. The `services` repository also holds the
+archives of the services that moved to Ginza, so pick archives by their
+prefix.
 
 ```bash
 sudo borg-job-paperless list --glob-archives 'paperless-*'
@@ -223,44 +223,10 @@ from before the move stay in the `services` repository under the prefix
 
 ### Forgejo
 
-The archive holds two things: `var/lib/forgejo/dump/forgejo-dump-<time>.tar`
-(repositories, LFS files, attachments, settings) and
-`var/backup/postgresql/forgejo.sql` (the database, dumped by Postgres).
-Use the newest tar. Inside it are `repos`, `data`, `custom`, `app.ini` and
-Forgejo's own copy of the database (`forgejo-db.sql`, not used here).
-
-```bash
-sudo systemctl stop forgejo
-sudo mkdir /root/restore/dump && sudo tar -xf /root/restore/var/lib/forgejo/dump/forgejo-dump-<time>.tar -C /root/restore/dump
-```
-
-Put the `repos` folder from the dump at `/var/lib/forgejo/repositories` and
-the `data` folder at `/var/lib/forgejo/data`. Leave the dump's `app.ini`
-where it is: the NixOS module writes Forgejo's settings itself at every
-start. Replace the database with the native dump, which re-creates it; the
-`forgejo` database user it refers to has to exist already, and on a
-reinstalled Aurora the NixOS module has created it:
-
-```bash
-sudo -u postgres dropdb --if-exists forgejo
-sudo -u postgres psql --file /root/restore/var/backup/postgresql/forgejo.sql
-sudo chown -R forgejo:forgejo /var/lib/forgejo
-sudo systemctl start forgejo
-```
-
-`postgres` can't read `/root`; if `psql` says so, feed it the file instead
-(`sudo cat <file> | sudo -u postgres psql`). The mirrors catch up with
-their sources by themselves at the next sync.
-
-Rehearsed on 2026-10-13 with a second Postgres and a second Forgejo in a
-scratch folder, sandboxed away from the real ones: the newest archive was
-extracted (about a minute, 221 MB), all 12 repositories passed `git fsck`,
-the database dump loaded into an empty Postgres in 4 seconds with the same
-numbers of repositories, users and releases as the live one, and Forgejo
-started on the restored database and repositories, reported itself healthy
-and served its login page. Not tried: the copy into the real
-`/var/lib/forgejo`, logging in, and cloning a repository from the restored
-copy.
+Forgejo moved to Ginza on 2026-10-19 and is no longer restored here: see
+[Ginza's README](../hosts/Ginza/README.md), "Forgejo". Its archives from
+before the move stay in the `services` repository under the prefix
+`forgejo` (`sudo borg-job-paperless list --glob-archives 'forgejo-*'`).
 
 ### Paperless
 
