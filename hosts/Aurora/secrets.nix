@@ -12,8 +12,6 @@
   age.identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
   age.secrets = {
-    # Cloudflare API token for the ACME DNS challenge
-    "cloudflare-dns.env".file = "${inputs.secrets}/aurora/cloudflare-dns.env.age";
     # Push URL of this host's monitor in Uptime Kuma (custom.heartbeat)
     "heartbeat-url".file = "${inputs.secrets}/aurora/heartbeat-url.age";
     # Read-only R2 token for the binary cache, linked to where Nix looks
