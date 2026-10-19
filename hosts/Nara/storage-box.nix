@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -38,7 +39,7 @@ in
       mkdir -p ${mountPoint}
       mountpoint -q ${mountPoint} && exit 0
       # seal: SMB3 encryption, as the traffic crosses Hetzner's network
-      ${pkgs.cifs-utils}/bin/mount.cifs "//$user.your-storagebox.de/$user" ${mountPoint} \
+      ${lib.getExe' pkgs.cifs-utils "mount.cifs"} "//$user.your-storagebox.de/$user" ${mountPoint} \
         -o credentials=${credentials},seal,iocharset=utf8,file_mode=0640,dir_mode=0750
     '';
   };
