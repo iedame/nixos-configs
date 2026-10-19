@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 
 {
   imports = [ ./secrets.nix ];
@@ -63,6 +63,10 @@
   # over HTTPS only.
   services.forgejo = {
     enable = true;
+    # The current release, as on Aurora; the module's default is the
+    # long-term one (forgejo-lts), which is older and refuses a database
+    # that a newer Forgejo has already migrated
+    package = pkgs.forgejo;
     database.type = "postgres";
     lfs.enable = true;
     settings = {
