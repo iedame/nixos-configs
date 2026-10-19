@@ -1,7 +1,10 @@
 { config, ... }:
 
 {
-  imports = [ ./secrets.nix ];
+  imports = [
+    ./secrets.nix
+    ./storage-box.nix
+  ];
 
   # Everything about the machine itself (disk, network, boot loader, admin
   # account) is in modules/nixos/hetzner.nix and cloud-server.nix; this file
@@ -13,6 +16,14 @@
   custom.beszel-agent = {
     enable = true;
     environmentFile = config.age.secrets."beszel-agent.env".path;
+  };
+
+  # Reports this host's health to Narita's Uptime Kuma, which alerts if a
+  # unit fails here or the reports stop (modules/nixos/heartbeat.nix). The
+  # monitor's push URL is an agenix secret (secrets.nix).
+  custom.heartbeat = {
+    enable = true;
+    urlFile = config.age.secrets."heartbeat-url".path;
   };
 
   # A `notify` command that sends a Telegram message

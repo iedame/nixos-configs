@@ -3,8 +3,9 @@
 NixOS on a Hetzner Cloud CAX11 (2 Arm cores, 4 GB of memory, a 40 GB disk;
 aarch64-linux) in Helsinki, in the same data centre as the storage boxes.
 It is meant for Immich, with the photos on a storage box mounted over SMB,
-and maybe Paperless later (see the plan on the list); for now it runs the
-base system only.
+and maybe Paperless later (see the plan on the list). For now it runs the
+base system, a heartbeat to Narita's Uptime Kuma, and the storage box
+mount that Immich will use.
 
 The machine itself (disk, network, boot loader, admin account) is described
 in `modules/nixos/hetzner.nix` and `modules/nixos/cloud-server.nix`, which
@@ -17,6 +18,22 @@ IPv4 by DHCP, with Hetzner's resolvers (`hetzner.nix`); IPv6 isn't
 configured, because Hetzner hands it out only as a static address, and no
 server's address or hardware ID is kept in this repository. On the tailnet
 it is reached like every other host.
+
+## Storage box
+
+Immich's library is on a sub-account of the storage box that also holds
+Aurora's Borg backups (`storage-box.nix`), mounted at
+`/mnt/immich-library` over SMB with encryption. The sub-account has SMB
+only, no access from outside Hetzner's network, and its own folder
+(`immich-library`) next to, never inside, the Borg sub-accounts' folders.
+Its username and password are the agenix secret
+`nara/immich-library-smb.age`, a CIFS credentials file; the share's address
+is made from the username, so the account name isn't in this repository.
+
+```bash
+systemctl status immich-library-mount   # mounted?
+df -h /mnt/immich-library               # space on the box
+```
 
 ## How it's updated
 

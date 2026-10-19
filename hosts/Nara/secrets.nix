@@ -18,5 +18,10 @@
     # Telegram bot token and chat ID for `notify` (custom.notify); the same
     # file on all the servers
     "telegram.env".file = "${inputs.secrets}/shared/telegram.env.age";
+    # Uptime Kuma push URL for this host's heartbeat (custom.heartbeat)
+    "heartbeat-url".file = "${inputs.secrets}/nara/heartbeat-url.age";
+    # The storage box sub-account holding Immich's library, as a CIFS
+    # credentials file: username= and password= (storage-box.nix)
+    "immich-library-smb".file = "${inputs.secrets}/nara/immich-library-smb.age";
   };
 }
