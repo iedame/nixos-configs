@@ -112,12 +112,14 @@
             ./modules/nixos/disk-health.nix
             ./modules/nixos/family-laptop.nix
             ./modules/nixos/flatpak.nix
+            ./modules/nixos/forgejo-backup.nix
             ./modules/nixos/locale.nix
             ./modules/nixos/notify.nix
             ./modules/nixos/fonts.nix
             ./modules/nixos/heartbeat.nix
             ./modules/nixos/linkding-backup.nix
             ./modules/nixos/plasma.nix
+            ./modules/nixos/postgres-collation.nix
             ./modules/nixos/reboot-for-kernel.nix
             ./modules/nixos/reboot-notice.nix
             ./modules/nixos/self-deploy.nix

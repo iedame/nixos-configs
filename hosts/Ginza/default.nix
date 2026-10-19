@@ -56,6 +56,48 @@
     environmentFile = config.age.secrets."backup.env".path;
   };
 
+  # Forgejo, moving here from Aurora, with its Postgres database. Like
+  # linkding, it listens on this machine only and is published as the
+  # Tailscale Service svc:git (https://git.<tailnet>.ts.net); that address
+  # names the tailnet, so ROOT_URL comes from an agenix secret. Clones are
+  # over HTTPS only.
+  services.forgejo = {
+    enable = true;
+    database.type = "postgres";
+    lfs.enable = true;
+    settings = {
+      server = {
+        HTTP_ADDR = "127.0.0.1";
+        HTTP_PORT = 3000;
+        DISABLE_SSH = true;
+      };
+      service.DISABLE_REGISTRATION = true;
+      service.REQUIRE_SIGNIN_VIEW = true;
+      actions = {
+        ENABLED = true;
+        DEFAULT_ACTIONS_URL = "github";
+      };
+    };
+    secrets.server.ROOT_URL = config.age.secrets."forgejo-root-url".path;
+  };
+  custom.tailscale-services.git.target = "http://127.0.0.1:${toString config.services.forgejo.settings.server.HTTP_PORT}";
+  # Backed up every night, encrypted, to the private R2 bucket, with a
+  # weekly restore test (modules/nixos/forgejo-backup.nix)
+  custom.forgejo-backup = {
+    enable = true;
+    environmentFile = config.age.secrets."backup.env".path;
+  };
+  # The daily check and command for Postgres after a glibc update
+  # (modules/nixos/postgres-collation.nix)
+  custom.postgres-collation = {
+    enable = true;
+    databaseServices = {
+      forgejo = [ "forgejo.service" ];
+      postgres = [ ];
+      template1 = [ ];
+    };
+  };
+
   # Atuin's sync server: shell history shared between Kawagoe, Akihabara
   # and Aurora, end-to-end encrypted by the clients
   # (modules/home-manager/atuin.nix). Its database is SQLite, so no

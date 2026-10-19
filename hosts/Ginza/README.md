@@ -7,8 +7,9 @@ the Mac: `https://linkding.<tailnet>.ts.net`, the Tailscale Service
 `svc:linkding`; **Beszel**'s hub, a dashboard of all the hosts:
 `https://beszel.<tailnet>.ts.net`, `svc:beszel`; **Atuin**'s sync
 server for shell history: `https://atuin.<tailnet>.ts.net`, `svc:atuin`;
-and **Vaultwarden**, the password manager, moved here from Aurora:
-`https://vault.<tailnet>.ts.net`, `svc:vault`.
+**Vaultwarden**, the password manager, moved here from Aurora:
+`https://vault.<tailnet>.ts.net`, `svc:vault`; and **Forgejo**, the git
+server, also from Aurora: `https://git.<tailnet>.ts.net`, `svc:git`.
 
 The machine itself (disk, boot loader, admin account) is described in
 `modules/nixos/oracle-a1.nix` and `modules/nixos/oracle.nix`, which it
@@ -191,5 +192,76 @@ sudo cp -a /tmp/restore/var/backup/vaultwarden/. /var/lib/vaultwarden/
 sudo rm -f /var/lib/vaultwarden/db.sqlite3-wal /var/lib/vaultwarden/db.sqlite3-shm
 sudo chown -R vaultwarden:vaultwarden /var/lib/vaultwarden
 sudo systemctl start vaultwarden
+sudo rm -rf /tmp/restore
+```
+
+## Forgejo
+
+Forgejo (`services.forgejo`) keeps its database in Postgres (18 here) and
+everything else in `/var/lib/forgejo`: the repositories, LFS files,
+attachments, and in `custom/conf` the secret keys that encrypt parts of
+the database (two-step login, tokens), so the two only work together.
+Its address, `server.ROOT_URL`, is the agenix secret
+`ginza/forgejo-root-url.age` (one line, `https://git.<tailnet>.ts.net/`).
+Clones are over HTTPS only; SSH is switched off.
+
+Once, in the admin console: define the service `svc:git` (port 443),
+approve this host for it, and let the tags of the devices that use it
+reach it.
+
+Postgres needs care after glibc updates, as on Aurora: a daily check
+fails while a database is behind, and `sudo postgres-refresh-collation
+--fix` rebuilds it (`custom.postgres-collation`; Aurora's README, "Postgres
+after a glibc update").
+
+### Moving the data from Aurora
+
+Forgejo stops on Aurora first, so the database and the repositories match.
+On Aurora (its `sudo` asks for the YubiKey):
+
+```bash
+ssh -t aurora 'sudo systemctl stop forgejo && sudo runuser -u postgres -- pg_dump --dbname=forgejo > /tmp/forgejo.sql && sudo tar -C /var/lib -czf /tmp/forgejo-state.tar.gz --exclude=forgejo/dump --exclude=forgejo/log forgejo && sudo chown haoji /tmp/forgejo-state.tar.gz'
+```
+
+Then to Ginza, where Forgejo's empty database is replaced by Aurora's and
+its state folder by Aurora's (the user IDs differ, hence the `chown`):
+
+```bash
+scp aurora:/tmp/forgejo.sql aurora:/tmp/forgejo-state.tar.gz ginza:/tmp/
+ssh ginza 'sudo systemctl stop forgejo && chmod 644 /tmp/forgejo.sql && sudo runuser -u postgres -- psql --dbname=postgres --command="DROP DATABASE forgejo" --command="CREATE DATABASE forgejo OWNER forgejo" && sudo runuser -u postgres -- psql --set ON_ERROR_STOP=1 --quiet --dbname=forgejo --file=/tmp/forgejo.sql && sudo mv /var/lib/forgejo /var/lib/forgejo.empty && sudo tar -C /var/lib -xzf /tmp/forgejo-state.tar.gz && sudo chown -R forgejo:forgejo /var/lib/forgejo && sudo systemctl start forgejo'
+ssh aurora rm /tmp/forgejo.sql /tmp/forgejo-state.tar.gz
+ssh ginza rm /tmp/forgejo.sql /tmp/forgejo-state.tar.gz
+```
+
+Clones whose remote is the old address need `git remote set-url origin
+https://git.<tailnet>.ts.net/<owner>/<repo>.git`.
+
+### Backup
+
+Every night it is backed up, encrypted, to the private R2 backups bucket
+(`custom.forgejo-backup`, `modules/nixos/forgejo-backup.nix`), with the same
+R2 token and password as linkding and Vaultwarden. Forgejo stops for the
+few seconds it takes to dump the database and copy the state folder.
+Once a week the newest copy is restored and checked: the secret keys are
+there, every repository passes `git fsck`, the dump loads into a scratch
+database next to the live one, and it knows as many repositories as the
+copy has.
+
+```bash
+ssh ginza sudo restic-forgejo snapshots                   # the copies
+ssh ginza sudo systemctl start forgejo-restore-test     # test a restore now
+```
+
+To restore, the newest copy into a scratch folder, then over the live
+data with Forgejo stopped:
+
+```bash
+sudo restic-forgejo restore latest --target /tmp/restore
+sudo systemctl stop forgejo
+sudo runuser -u postgres -- psql --dbname=postgres --command="DROP DATABASE forgejo" --command="CREATE DATABASE forgejo OWNER forgejo"
+sudo runuser -u postgres -- psql --set ON_ERROR_STOP=1 --quiet --dbname=forgejo --file=/tmp/restore/var/backup/forgejo/forgejo.sql
+sudo rsync -a --delete --exclude=/dump --exclude=/log /tmp/restore/var/backup/forgejo/state/ /var/lib/forgejo/
+sudo chown -R forgejo:forgejo /var/lib/forgejo
+sudo systemctl start forgejo
 sudo rm -rf /tmp/restore
 ```
