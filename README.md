@@ -16,6 +16,7 @@ home-manager. Layout inspired by
 | [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud micro instance: uptime monitoring, Tailscale exit node |
 | [Nikko](hosts/Nikko/README.md) | NixOS, x86_64-linux | Oracle Cloud micro instance: uptime monitoring, Tailscale exit node |
 | [Ginza](hosts/Ginza/README.md) | NixOS, aarch64-linux | Oracle Cloud Ampere A1 instance: linkding, Vaultwarden, Forgejo, Beszel, Atuin |
+| [Nara](hosts/Nara/README.md) | NixOS, aarch64-linux | Hetzner Cloud Arm server (CAX11) in Helsinki, for Immich next to the storage boxes |
 
 ## Layout
 
@@ -42,7 +43,7 @@ How each host gets a merged change, and how to check that it did:
 |---|---|---|
 | Aurora, Kawagoe, Akihabara | By hand, with `update` (below) | The switch's own output; `update-diff` for what changed |
 | Tsukuba, Kawaguchiko | By themselves, weekly, from the next boot ([Tsukuba](hosts/Tsukuba/README.md#how-its-kept-up-to-date)) | `systemctl status nixos-upgrade` on the laptop |
-| Narita, Nikko, Ginza | By themselves, about 20 minutes after a merge ([Narita](hosts/Narita/README.md#how-its-updated)) | Narita's README: whether it runs the latest system, and what a failed update means |
+| Narita, Nikko, Ginza, Nara | By themselves, about 20 minutes after a merge ([Narita](hosts/Narita/README.md#how-its-updated)) | Narita's README: whether it runs the latest system, and what a failed update means |
 
 A failed automatic update also shows up in the hosts' health reports, as a
 failed unit.

@@ -22,7 +22,8 @@
   # Tailscale only. `hostKey` is the machine's own SSH key, the contents of
   # its /etc/ssh/ssh_host_ed25519_key.pub: clients are told to expect
   # exactly this key, so it has to be updated here if a machine is
-  # reinstalled (the Oracle hosts kept theirs across the conversion).
+  # reinstalled (the Oracle hosts kept theirs across the conversion, and Nara
+  # took over the key of the server it replaced).
   hosts = {
     Aurora = {
       address = "100.110.116.3";
@@ -35,6 +36,10 @@
     Ginza = {
       address = "100.114.25.47";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINY3du1Y4H5un/N5Dg3lfykUVdoCtI7dkBZXWrFPFusF";
+    };
+    Nara = {
+      address = "100.96.8.18";
+      hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2HFnwN2W3hc/bf/y63C6VQfn09yA6lATf1MTpp/v3H";
     };
     Narita = {
       address = "100.111.191.17";

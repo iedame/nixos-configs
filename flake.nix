@@ -86,10 +86,10 @@
         }
       );
 
-      # An Oracle Cloud host: `shape` is the module describing its machine
-      # (nixosModules.oracle-micro or nixosModules.oracle-a1), which also
-      # sets its platform
-      oracle =
+      # A cloud server: `shape` is the module describing its machine
+      # (nixosModules.oracle-micro, oracle-a1 or hetzner), which also sets
+      # its platform
+      cloud =
         shape: host:
         inputs.nixpkgs.lib.nixosSystem {
           specialArgs = {
@@ -138,6 +138,9 @@
         # disk (and imports oracle.nix, what they share)
         oracle-micro = ./modules/nixos/oracle-micro.nix;
         oracle-a1 = ./modules/nixos/oracle-a1.nix;
+        # Hetzner Cloud Arm servers (cloud-server.nix, what they share with
+        # the Oracle hosts)
+        hetzner = ./modules/nixos/hetzner.nix;
       };
 
       darwinModules.default = {
@@ -250,10 +253,12 @@
       };
 
       # Oracle Cloud Always Free micro instances
-      nixosConfigurations.Narita = oracle self.nixosModules.oracle-micro ./hosts/Narita;
-      nixosConfigurations.Nikko = oracle self.nixosModules.oracle-micro ./hosts/Nikko;
+      nixosConfigurations.Narita = cloud self.nixosModules.oracle-micro ./hosts/Narita;
+      nixosConfigurations.Nikko = cloud self.nixosModules.oracle-micro ./hosts/Nikko;
       # Oracle Cloud Always Free Ampere A1 instance
-      nixosConfigurations.Ginza = oracle self.nixosModules.oracle-a1 ./hosts/Ginza;
+      nixosConfigurations.Ginza = cloud self.nixosModules.oracle-a1 ./hosts/Ginza;
+      # Hetzner Cloud Arm server in Helsinki, next to the storage boxes
+      nixosConfigurations.Nara = cloud self.nixosModules.hetzner ./hosts/Nara;
 
       darwinConfigurations.Kawagoe = inputs.nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
