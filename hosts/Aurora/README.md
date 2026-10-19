@@ -172,7 +172,8 @@ no index order), but the warning stays until each database's indexes are
 rebuilt and the new version recorded. It shows up in the logs of the
 database dumps the backups make.
 
-A daily check (`postgres-collation-check`, `services.nix`) fails while any
+A daily check (`postgres-collation-check`, `custom.postgres-collation` in
+`modules/nixos/postgres-collation.nix`) fails while any
 database is behind, so it arrives as a failed unit in the
 [health reports](#health-reports), within a day of the update or ten
 minutes after the next boot.
@@ -204,8 +205,9 @@ rebuilds its indexes, records the new version and starts the services
 again. It ends by running the check, which clears the alert. Forgejo and
 Immich are each down for well under a minute.
 
-The command (`services.nix`) knows which services use which database from
-the `databaseServices` list above it. A database that isn't in that list is
+The command (`modules/nixos/postgres-collation.nix`) knows which services
+use which database from the `databaseServices` list in `services.nix`
+(`custom.postgres-collation`). A database that isn't in that list is
 skipped and the check keeps failing: add it to the list, with its services,
 and rebuild.
 

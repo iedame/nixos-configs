@@ -30,5 +30,8 @@
     # Tailscale Service address, which names the tailnet) and ADMIN_TOKEN;
     # the same as Aurora's otherwise
     "vaultwarden.env".file = "${inputs.secrets}/ginza/vaultwarden.env.age";
+    # Forgejo's address (server.ROOT_URL), which names the tailnet: one
+    # line, https://git.<tailnet>.ts.net/
+    "forgejo-root-url".file = "${inputs.secrets}/ginza/forgejo-root-url.age";
   };
 }
