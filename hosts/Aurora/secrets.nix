@@ -28,6 +28,9 @@
     "borg-immich-passphrase".file = "${inputs.secrets}/aurora/borg-immich-passphrase.age";
     "borg-home-passphrase".file = "${inputs.secrets}/aurora/borg-home-passphrase.age";
     "borg-services-passphrase".file = "${inputs.secrets}/aurora/borg-services-passphrase.age";
+    # The key the mirror of Immich's library is pulled from Nara with
+    # (immich-mirror.nix)
+    "immich-mirror-ssh-key".file = "${inputs.secrets}/aurora/immich-mirror-ssh-key.age";
     # Beszel agent settings: the hub's address, a universal token and the
     # hub's public key (custom.beszel-agent); the same file on every host
     "beszel-agent.env".file = "${inputs.secrets}/shared/beszel-agent.env.age";

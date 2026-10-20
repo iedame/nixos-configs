@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   # Machine learning runs on Aurora, which has a GPU and the memory for it
   auroraIp = (import ../../lib/hosts.nix).hosts.Aurora.address;
@@ -33,6 +38,22 @@ in
     bindsTo = [ "immich-library-mount.service" ];
     after = [ "immich-library-mount.service" ];
   };
+
+  # Aurora keeps a mirror of the library on its external pool
+  # (hosts/Aurora/immich-mirror.nix), pulled over Tailscale when it's on.
+  # It logs in as this account, which is in Immich's group and so can read
+  # the share, and its key can do nothing but a read-only rsync of it.
+  users.users.immich-mirror = {
+    isSystemUser = true;
+    group = "immich-mirror";
+    extraGroups = [ config.services.immich.group ];
+    # The forced command runs through the login shell
+    useDefaultShell = true;
+    openssh.authorizedKeys.keys = [
+      ''command="${lib.getExe pkgs.rrsync} -ro ${config.services.immich.mediaLocation}",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIECan97ggvBlpB5UZZq+VYGnvjLh484Rbt2YpAQN5Z7Y immich-mirror@Aurora''
+    ];
+  };
+  users.groups.immich-mirror = { };
 
   # The daily check and command for Postgres after a glibc update
   # (modules/nixos/postgres-collation.nix)

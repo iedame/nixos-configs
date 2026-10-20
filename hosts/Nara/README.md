@@ -46,6 +46,11 @@ serves it on its tailnet address, port 3003. When Aurora is off, uploads,
 browsing and the timeline work as usual; the machine-learning jobs for new
 photos wait and catch up once it is back, and smart search doesn't answer.
 
+Backed up by Aurora, which pulls a mirror of the whole media folder to its
+external pool whenever it is on, through a read-only account here
+(`immich-mirror`; Aurora's README, "Immich's mirror"). Immich's own
+nightly database dumps are in that folder (`backups/`).
+
 Besides the config:
 
 1. In Tailscale's admin console: define svc:immich (TCP 443), approve
