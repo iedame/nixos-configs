@@ -31,6 +31,9 @@
     # The key the mirror of Immich's library is pulled from Nara with
     # (immich-mirror.nix)
     "immich-mirror-ssh-key".file = "${inputs.secrets}/aurora/immich-mirror-ssh-key.age";
+    # Paperless's svc:paperless address (services.nix): PAPERLESS_URL and
+    # PAPERLESS_ALLOWED_HOSTS
+    "paperless.env".file = "${inputs.secrets}/aurora/paperless.env.age";
     # Beszel agent settings: the hub's address, a universal token and the
     # hub's public key (custom.beszel-agent); the same file on every host
     "beszel-agent.env".file = "${inputs.secrets}/shared/beszel-agent.env.age";

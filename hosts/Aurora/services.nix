@@ -126,9 +126,16 @@
     openFirewall = false;
   };
 
+  # Paperless stays here, at home, rather than on a cloud server: the
+  # documents are the most private data on this machine. It listens on this
+  # machine only and is published as the Tailscale Service svc:paperless
+  # (https://paperless.<tailnet>.ts.net, modules/nixos/tailscale-services.nix),
+  # reachable from the other devices while this one is on. That address
+  # names the tailnet, so PAPERLESS_URL is in an agenix secret.
   services.paperless = {
     enable = true;
     mediaDir = "/backup-pool/documents/paperless/media/";
+    environmentFile = config.age.secrets."paperless.env".path;
     settings = {
       PAPERLESS_OCR_LANGUAGE = "por+eng";
     };
@@ -141,6 +148,8 @@
       onCalendar = null;
     };
   };
+
+  custom.tailscale-services.paperless.target = "http://127.0.0.1:${toString config.services.paperless.port}";
 
   virtualisation = {
     docker.enable = false;

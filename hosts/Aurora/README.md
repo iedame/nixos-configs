@@ -35,7 +35,9 @@ progress, package diff, then activation).
   "Use the SSH agent"). `ssh`, `git push` and commit signing depend on it;
   it's the one piece that isn't declarative.
 - **Services**: reached on the Tailscale address set at the top of
-  `default.nix`. Immich moved to Nara (2026-10-19); this host still runs
+  `default.nix`. Paperless is published as the Tailscale Service
+  svc:paperless (`https://paperless.<tailnet>.ts.net`, open while this
+  machine is on). Immich moved to Nara (2026-10-19); this host still runs
   its machine learning, on port 3003 over Tailscale, which Nara's Immich
   uses (`hosts/Nara/README.md`, "Immich").
 
@@ -259,7 +261,7 @@ Last done on 2026-10-13, for glibc 2.40 to 2.44: 3 seconds for `forgejo`,
 
 ## Secrets
 
-Eight secrets are managed with agenix (`secrets.nix`; the encrypted files are
+Ten secrets are managed with agenix (`secrets.nix`; the encrypted files are
 in `aurora/` of the private secrets repo), decrypted at activation into
 `/run/agenix/`:
 
@@ -269,6 +271,9 @@ in `aurora/` of the private secrets repo), decrypted at activation into
 | `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
 | `borg-ssh-config`, `borg-ssh-key` | The backups: how to reach the storage box, and the key for it |
 | `borg-immich-passphrase`, `borg-home-passphrase`, `borg-services-passphrase` | The backups: each repository's passphrase |
+| `immich-mirror-ssh-key` | Pulling the mirror of Immich's library from Nara |
+| `paperless.env` | Paperless's svc:paperless address (`PAPERLESS_URL`, `PAPERLESS_ALLOWED_HOSTS`) |
+| `beszel-agent.env` | Beszel's agent (shared with the other hosts) |
 
 To confirm the services read them:
 
