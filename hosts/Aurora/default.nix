@@ -11,6 +11,7 @@
     ./gaming.nix
     ./services.nix
     ./backup.nix
+    ./immich-mirror.nix
   ];
 
   # Flakes, unfree, nixpkgs registry pin, weekly GC + store optimisation

@@ -155,6 +155,38 @@ The storage box's account names, the SSH key it accepts and the
 repository passphrases are agenix secrets (below). Without a repository's
 passphrase its backup can't be read; both are also in 1Password.
 
+## Immich's mirror
+
+Immich runs on Nara since 2026-10-19. `immich-mirror.nix` keeps a copy of
+its library here, in the ZFS dataset `external-pool/immich`: every day
+this machine is on, it pulls the library from Nara over Tailscale with
+rsync (only what changed), then takes a snapshot, keeping the last 30.
+Immich's own database dumps are in the library's `backups/`, so they come
+along. Nara accepts the job's key only for a read-only rsync of the
+library (its `immich-mirror` account).
+
+A run fails, and the heartbeat reports it, if the dataset isn't mounted,
+if Nara's library looks missing (no `library/.immich`), or if it would
+delete more than 2000 files; a real mass deletion then needs a run by
+hand with a higher `--max-delete`.
+
+```bash
+sudo systemctl start immich-mirror                  # pull now
+journalctl -u immich-mirror -n 20 --no-pager -o cat # what the last run did
+zfs list -t snapshot -o name,used,creation external-pool/immich
+ls /external-pool/immich/.zfs/snapshot/              # each snapshot, browsable
+```
+
+Made once by hand (2026-10-19): the dataset, seeded from the old Immich
+folder on backup-pool so the first pull only brought what changed since
+the move:
+
+```bash
+sudo zfs create external-pool/immich
+sudo rsync -aH --info=progress2 /backup-pool/photos/immich/ /external-pool/immich/
+sudo systemctl start immich-mirror
+```
+
 ## Postgres after a glibc update
 
 The same applies to Ginza, which runs Forgejo's database; its README
