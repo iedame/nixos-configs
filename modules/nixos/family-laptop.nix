@@ -11,7 +11,7 @@ in
   # An old MacBook kept at a relative's home and used for the browser:
   # Plasma in Brazilian Portuguese, straight to the desktop with no
   # passwords asked, Firefox and Chrome set up for smooth video with ad
-  # blocking and no history, Flatpak for anything else they want, and weekly
+  # blocking and no history, Flatpak for anything else they want, and daily
   # updates by itself. Administered remotely over Tailscale.
   #
   # A host that enables this still brings its own hardware: disk layout,
@@ -212,16 +212,24 @@ in
         };
         systemd.services.beszel-agent.unitConfig.ConditionPathExists = "/etc/beszel-agent.env";
 
-        # Updates itself from the public repo: once a week (or at the next start,
+        # Updates itself from the public repo: once a day (or at the next start,
         # if it was off) it builds what master describes and makes it the default
         # for the next boot, so nothing changes under a running session. The
         # previous systems stay in the boot menu.
+        #
+        # Daily rather than weekly because the laptop is used in short
+        # sessions: a run cut off by a shutdown counts as the day's, and the
+        # next day's carries on from what it had already downloaded. Weekly,
+        # the retry came a week later, after the weekly store clean-up had
+        # deleted those downloads, so a large update could fail every week.
+        # A day with nothing new costs a check of GitHub. The delay is short
+        # for the same reason: it also applies to the run at the next start.
         system.autoUpgrade = {
           enable = true;
           flake = "github:iedame/nixos-configs#${config.networking.hostName}";
           operation = "boot";
-          dates = "weekly";
-          randomizedDelaySec = "30min";
+          dates = "daily";
+          randomizedDelaySec = "5min";
         };
         # Passwords are set on the machine with `passwd`, not here.
         users.users = {
@@ -281,7 +289,7 @@ in
         # nothing in the logs, until the next reboot: on Tsukuba (2026-10-21)
         # a minute of the update's downloads at full speed (25 at once,
         # about 32 MiB/s) froze it. Fewer downloads at once, and a cap on
-        # their speed, keep the weekly update on Wi-Fi from doing that. The
+        # their speed, keep the daily update on Wi-Fi from doing that. The
         # cap is per download (KiB/s), so at most 4 x 2 MiB/s.
         nix.settings = {
           http-connections = 4;
