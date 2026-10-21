@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.custom.heartbeat;
+  ignoredUnits = pkgs.writeText "heartbeat-ignored-units" (lib.concatLines cfg.ignoredUnits);
 in
 {
   # Reports this host's health to an Uptime Kuma "push" monitor, which then
@@ -46,6 +47,15 @@ in
         monitor's heartbeat interval.
       '';
     };
+    ignoredUnits = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      # fwupd's hourly download of the firmware catalogue (on the hosts
+      # with Plasma) fails whenever its server is down, which is no failure
+      # of this host and nothing to act on: it only feeds Discover's list
+      # of firmware updates, and the next run tries again
+      default = [ "fwupd-refresh.service" ];
+      description = "Units whose failure is not reported.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -66,7 +76,8 @@ in
         url=$(head -n 1 ${lib.escapeShellArg cfg.urlFile})
         url=''${url%%\?*}
 
-        failed=$(systemctl list-units --failed --no-legend --plain | cut -d' ' -f1 | tr '\n' ' ')
+        failed=$(systemctl list-units --failed --no-legend --plain | cut -d' ' -f1 \
+          | grep -v -x -F -f ${ignoredUnits} | tr '\n' ' ')
         if [ -z "$failed" ]; then
           status=up
           message=OK
