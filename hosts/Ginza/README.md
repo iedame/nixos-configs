@@ -209,10 +209,9 @@ Once, in the admin console: define the service `svc:git` (port 443),
 approve this host for it, and let the tags of the devices that use it
 reach it.
 
-Postgres needs care after glibc updates, as on Aurora: a daily check
-fails while a database is behind, and `sudo postgres-refresh-collation
---fix` rebuilds it (`custom.postgres-collation`; Aurora's README, "Postgres
-after a glibc update").
+Postgres needs care after glibc updates: a daily check fails while a
+database is behind, and `sudo postgres-refresh-collation --fix` rebuilds it
+(`custom.postgres-collation`; [docs/postgres-glibc.md](../../docs/postgres-glibc.md)).
 
 ### Moving the data from Aurora
 

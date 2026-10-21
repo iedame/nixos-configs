@@ -10,7 +10,7 @@ let
 
   # `sudo postgres-refresh-collation` shows the glibc version each database
   # was last indexed under; with --fix it rebuilds the indexes of those that
-  # are behind (hosts/Aurora/README.md, "Postgres after a glibc update").
+  # are behind (docs/postgres-glibc.md).
   postgres-refresh-collation = pkgs.writeShellApplication {
     name = "postgres-refresh-collation";
     runtimeInputs = [
@@ -130,10 +130,10 @@ in
 {
   # Postgres sorts text by the rules of the C library (glibc) and stores its
   # text indexes in that order; after a glibc update the order can change,
-  # and the indexes need rebuilding (hosts/Aurora/README.md, "Postgres after
-  # a glibc update"). This adds a daily check that fails, and so is reported
-  # by the heartbeat, while any database is behind, and the command that
-  # rebuilds them: `sudo postgres-refresh-collation [--fix]`.
+  # and the indexes need rebuilding (docs/postgres-glibc.md). This adds a
+  # daily check that fails, and so is reported by the heartbeat, while any
+  # database is behind, and the command that rebuilds them:
+  # `sudo postgres-refresh-collation [--fix]`.
   options.custom.postgres-collation = {
     enable = lib.mkEnableOption "the daily Postgres collation check and the postgres-refresh-collation command";
     databaseServices = lib.mkOption {
