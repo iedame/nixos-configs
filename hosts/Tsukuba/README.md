@@ -6,13 +6,14 @@ remotely.
 
 ## How it's kept up to date
 
-Nobody runs `update` here. Once a week (or at the next start, if it was off)
+Nobody runs `update` here. Once a day (or at the next start, if it was off)
 `system.autoUpgrade` builds `github:iedame/nixos-configs#Tsukuba` from
 `master` and makes it the default for the next boot, so nothing changes under
-a running session. A change reaches the laptop by being merged; CI builds
-this host on every pull request first.
+a running session. A run cut off by a shutdown is retried the next day,
+and carries on from what it had already downloaded. A change reaches the
+laptop by being merged; CI builds this host on every pull request first.
 
-The apps installed from Discover (Flatpaks) are updated separately, also
+The apps installed from Discover (Flatpaks) are updated separately,
 weekly and by themselves (`modules/nixos/flatpak.nix`); an open app gets
 its new version the next time it is started. Discover's update notifier is
 switched off, since there is nothing left for anyone to click.
