@@ -50,8 +50,8 @@ package diff, then activation). The Mac's hostname is set to `Kawagoe`
   see the root README.
 - **Homebrew** (`homebrew.nix`): Homebrew itself comes from nix-homebrew,
   with the core/cask taps pinned as flake inputs, so `brew update` is off and
-  versions move with the weekly flake update. Casks are declared in
-  `homebrew.casks`; anything installed with `brew` by hand is uninstalled on
+  versions move with the flake update (Tuesdays and Fridays). Casks are
+  declared in `homebrew.casks`; anything installed with `brew` by hand is uninstalled on
   the next switch. Microsoft Office/Teams update themselves via Microsoft
   AutoUpdate. Mac App Store apps are declared in `homebrew.masApps`; removing
   one there does not uninstall it.
