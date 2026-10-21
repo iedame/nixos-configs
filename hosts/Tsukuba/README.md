@@ -104,6 +104,30 @@ it readable by root only, and sends a first report:
 ssh -t tsukuba 'read -rsp "Push URL: " u && echo && printf "%s\n" "$u" | sudo install -m 600 /dev/stdin /etc/heartbeat-url && sudo systemctl start heartbeat.service && journalctl -u heartbeat.service -n 3 --no-pager -o cat'
 ```
 
+## Beszel
+
+The usage graphs (CPU, memory, disk, temperatures) go to Beszel's hub on
+Ginza, like the servers' (`custom.beszel-agent`). Its settings are the
+servers' file, `shared/beszel-agent.env.age` in the secrets repository,
+which has to be on the machine as `/etc/beszel-agent.env`; without it the
+agent doesn't start. From Kawagoe, decrypt it with the editing key
+(agenix asks for its passphrase) and copy it to the laptop's home
+directory first, as sudo's password prompt can't share the pipe:
+
+```bash
+cd ~/.config/nixos-secrets && agenix -d shared/beszel-agent.env.age -i ~/.ssh/agenix | ssh tsukuba 'umask 077 && cat > beszel-agent.env'
+```
+
+then move it into place and start the agent; the laptop shows up on the
+hub under its host name:
+
+```bash
+ssh -t tsukuba 'sudo install -m 600 beszel-agent.env /etc/beszel-agent.env && rm beszel-agent.env && sudo systemctl start beszel-agent && systemctl is-active beszel-agent'
+```
+
+The laptop is often off, so leave the hub's "status" (down) alert off for
+it.
+
 ## Installing
 
 This is how it was installed (from Kawagoe, about 25 minutes). It erases the
