@@ -201,6 +201,17 @@ in
         custom.heartbeat.enable = true;
         custom.ssh-server.enable = true;
 
+        # Reports this host's usage to Beszel's hub on Ginza
+        # (modules/nixos/beszel-agent.nix). No agenix here, so its settings
+        # (the same file as the servers') are put on the machine by hand,
+        # in /etc/beszel-agent.env; until then the agent doesn't start, and
+        # nothing fails.
+        custom.beszel-agent = {
+          enable = true;
+          environmentFile = "/etc/beszel-agent.env";
+        };
+        systemd.services.beszel-agent.unitConfig.ConditionPathExists = "/etc/beszel-agent.env";
+
         # Updates itself from the public repo: once a week (or at the next start,
         # if it was off) it builds what master describes and makes it the default
         # for the next boot, so nothing changes under a running session. The
