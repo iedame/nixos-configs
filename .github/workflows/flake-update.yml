@@ -1,8 +1,11 @@
-name: Weekly Nix Flake Update
+name: Nix Flake Update
 
 on:
   schedule:
-    - cron: "0 0 * * 5" # Midnight UTC on Fridays
+    # Twice a week, so each update is smaller and a breakage is easier to
+    # place; nixos-unstable only moves once Hydra has built it, so updating
+    # sooner doesn't mean building more
+    - cron: "0 0 * * 2,5" # Midnight UTC on Tuesdays and Fridays
   workflow_dispatch: # Allow manual triggering
 
 # The job's own token only reads the repository; the branch and pull request
@@ -78,7 +81,7 @@ jobs:
           {
             echo "## Flake inputs updated"
             echo ""
-            echo "Automated weekly \`nix flake update\` — refreshes all inputs."
+            echo "Automated \`nix flake update\` (Tuesdays and Fridays) — refreshes all inputs."
             echo ""
             echo "### Changes:"
             echo '```'
@@ -89,7 +92,7 @@ jobs:
           } > /tmp/pr_body.md
           cat /tmp/pr_body.md >> "$GITHUB_STEP_SUMMARY"
 
-      # One rolling branch: if last week's PR is still open, it is updated
+      # One rolling branch: if the previous run's PR is still open, it is updated
       # in place instead of a second PR being opened. The review request
       # notifies me whatever my watch setting for the repository is.
       - name: Create pull request
@@ -99,8 +102,8 @@ jobs:
           token: ${{ steps.bot-token.outputs.token }}
           author: ${{ steps.bot.outputs.identity }}
           committer: ${{ steps.bot.outputs.identity }}
-          commit-message: "chore: weekly flake update - ${{ steps.bot.outputs.date }}"
-          title: "chore: weekly flake update - ${{ steps.bot.outputs.date }}"
+          commit-message: "chore: flake update - ${{ steps.bot.outputs.date }}"
+          title: "chore: flake update - ${{ steps.bot.outputs.date }}"
           body-path: /tmp/pr_body.md
           branch: automated/flake-update
           base: master

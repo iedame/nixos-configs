@@ -70,8 +70,8 @@ Format with `nix fmt` (treefmt-nix): it runs nixfmt over every Nix file and
 keep-sorted over the package lists, which sit between `# keep-sorted start`
 and `# keep-sorted end` comments. Add a package anywhere in such a list and
 `nix fmt` puts it in order. `nix flake check` includes a `formatting` check
-that fails on anything unformatted or unsorted. Flake inputs are updated weekly by a GitHub
-Actions PR.
+that fails on anything unformatted or unsorted. Flake inputs are updated
+twice a week (Tuesdays and Fridays) by a GitHub Actions PR.
 
 ## Binary cache
 
