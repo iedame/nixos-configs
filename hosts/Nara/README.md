@@ -69,6 +69,49 @@ systemctl status immich-server
 curl -s http://<Aurora's Tailscale address>:3003/ping   # "pong" while Aurora is on
 ```
 
+Postgres needs care after glibc updates: a daily check fails while the
+database is behind, and `sudo postgres-refresh-collation --fix` rebuilds it
+([docs/postgres-glibc.md](../../docs/postgres-glibc.md)).
+
+### Restoring Immich
+
+What can be lost, and where it comes back from:
+
+- **Nara itself** (the server or its disk): reinstall it ("Installing"
+  below). The library is untouched on the storage box. The database lives
+  on the local disk, so it is gone: load Immich's newest dump from the
+  share's `backups/` (made daily at 13:00) into the fresh install, as
+  below. Photos uploaded after that dump are on the share but unknown to
+  the database until they are uploaded again.
+- **The share's contents** (the storage box, or files deleted on it):
+  Aurora's mirror (`external-pool/immich`, Aurora's README, "Immich's
+  mirror") holds the library as of its last pull, plus 30 daily snapshots
+  to go back further. Copy it back to the share with rsync over Tailscale
+  (from home that is roughly 15 hours for the whole library at Aurora's
+  upload speed), then restore the database from the dump that came with it
+  if the live one is older or damaged.
+
+Loading one of Immich's dumps (`immich-db-backup-<time>-v<version>-pg<version>.sql.gz`)
+replaces the whole database; check the steps against "Backup and restore"
+in Immich's documentation for the installed version, and use a dump from
+that version or older, never newer:
+
+```bash
+sudo systemctl stop immich-server
+sudo -u postgres dropdb --if-exists immich
+sudo -u postgres createdb --owner=immich immich
+sudo cat /mnt/immich-library/backups/<dump>.sql.gz | gunzip \
+  | sed "s/SELECT pg_catalog.set_config('search_path', '', false);/SELECT pg_catalog.set_config('search_path', 'public, pg_catalog', true);/g" \
+  | sudo -u postgres psql --dbname=immich
+sudo systemctl start immich-server
+```
+
+Done for real on 2026-10-19, when Immich moved here from Aurora: the
+library came back from Borg and the database from a Postgres dump; Immich
+rewrote the paths for the new media folder by itself at its first start.
+Three errors about an old extension called `vectors` were expected then
+(Aurora's database still listed it).
+
 ## How it's updated
 
 Like Ginza: CI builds the system on GitHub's Arm runner and uploads all of

@@ -4,15 +4,12 @@ What to do when Aurora loses a disk, or all of them. Written 2026-10-13.
 
 **Most of this procedure has not been rehearsed.** The backups it relies on
 run every night and their repositories are checked monthly, but apart from
-reading the archives back, only the [Paperless](#paperless) restore and
-a part of
-[Immich's](#immichs-database) have been tried, and those into scratch
-folders. Treat the other commands as the plan, and correct this file after
+reading the archives back, only the [Paperless](#paperless) restore has
+been tried, into a scratch folder. Treat the other commands as the plan, and correct this file after
 the first real use.
 
 What is tested without anyone asking: once a month Aurora restores the
-newest Paperless archive, and Immich's database
-with a sample of photos, into a scratch folder, and checks them (see
+newest Paperless archive into a scratch folder and checks it (see
 "Backups" in [Aurora's README](../hosts/Aurora/README.md)). That shows the
 archives hold complete, undamaged copies. It doesn't replace the steps
 below, which put such a copy back in service.
@@ -22,8 +19,8 @@ below, which put such a copy back in service.
 | Disk | Holds | If it dies |
 |---|---|---|
 | 256 GB Toshiba NVMe | `/boot`, `/` (the system, `/home`, every service's state in `/var/lib`), swap | [Reinstall](#the-system-disk-died), then restore home folders and services |
-| 1 TB HGST (`backup-pool`) | `/backup-pool/photos` (Immich's library), `/backup-pool/documents` | [Re-create the pool](#the-backup-pool-disk-died) and restore from the `immich` and `home` backups |
-| 10 TB WD, USB (`external-pool`) | `/external-pool/media` | [Not backed up](#what-is-not-backed-up) |
+| 1 TB HGST (`backup-pool`) | `/backup-pool/photos`, `/backup-pool/documents` | [Re-create the pool](#the-backup-pool-disk-died) and restore from the `home` backup |
+| 10 TB WD, USB (`external-pool`) | `/external-pool/media`; `/external-pool/immich`, the mirror of Immich's library | Media: [not backed up](#what-is-not-backed-up). The mirror: re-create the dataset and let it pull again from Nara (Aurora's README, "Immich's mirror"): the whole library, over the internet |
 | 1 TB Samsung NVMe | `/mnt/storage`: the Steam library, `Games`, `GitHub` clones | Not backed up |
 | 2 TB WD, USB | An NTFS volume Aurora doesn't mount | Nothing Aurora uses |
 
@@ -35,9 +32,12 @@ each (`hosts/Aurora/backup.nix`):
 
 | Repository | Jobs | Restores |
 |---|---|---|
-| `immich` | `immich` | `/backup-pool/photos/immich` (photos, videos and Immich's own database dumps) and `/var/backup/postgresql/immich.sql`, a dump of its database made just before each backup |
 | `home` | `home` | `/backup-pool/documents` and the home folders listed in `backup.nix` |
 | `services` | `paperless` (and `vaultwarden` and `forgejo` archives from before they moved to Ginza) | Each service's own export of its data |
+
+Immich isn't on Aurora any more: it runs on Nara since 2026-10-19, and its
+photos are backed up by the mirror above. Restoring it is in
+[Nara's README](../hosts/Nara/README.md), "Restoring Immich".
 
 ## What you need that is not on Aurora
 
@@ -145,7 +145,9 @@ In this order, each described under [Restoring one thing](#restoring-one-thing):
 
 1. The home folders, from `home`.
 2. Paperless.
-3. Immich's database. Its photos are on the pool and need nothing.
+
+Immich's machine learning, which Nara uses, needs nothing restored: it
+downloads its models again.
 
 Then sign in to 1Password and enable its SSH agent, and set up again what
 has no backup: Jellyfin, the \*arr apps, Syncthing's pairings, Steam.
@@ -156,7 +158,7 @@ The system still runs. Stop what writes to the pool, re-create it on the
 new disk under the same name, and restore.
 
 ```bash
-sudo systemctl stop immich-server immich-machine-learning paperless-web paperless-consumer paperless-scheduler paperless-task-queue syncthing
+sudo systemctl stop paperless-web paperless-consumer paperless-scheduler paperless-task-queue syncthing
 sudo zpool create -o ashift=12 -O compression=on -O mountpoint=/backup-pool backup-pool /dev/disk/by-id/<the new disk>
 sudo zfs create backup-pool/photos
 sudo zfs create backup-pool/documents
@@ -164,15 +166,13 @@ sudo zfs create backup-pool/documents
 
 Borg stores paths without the leading `/`, so extracting from `/` puts
 everything back where it was. Take the newest archive name from
-`sudo borg-job-immich list` and `sudo borg-job-home list`:
+`sudo borg-job-home list`:
 
 ```bash
-cd / && sudo borg-job-immich extract --progress ::<archive>
 cd / && sudo borg-job-home extract --progress ::<archive> backup-pool/documents
 ```
 
-The first is about 358 GB to download, so it runs for hours. Start the
-services again afterwards. Paperless's own files aren't in `home`; restore
+Start the services again afterwards. Paperless's own files aren't in `home`; restore
 them as described under [Paperless](#paperless).
 
 If both this disk and the system disk are gone, do the system first, then
@@ -255,61 +255,16 @@ came back with originals byte-identical to the live ones, and Paperless's
 sanity checker found no issues. Not tried: the import into the real
 service, and opening a document in the restored copy.
 
-### Immich's database
+### Immich
 
-There are two kinds of dump, and the first is the one to use:
-
-- `var/backup/postgresql/immich.sql` in the `immich` archive: made by
-  Postgres just before each backup, so it matches the photos in the same
-  archive. It re-creates the `immich` database itself.
-- Immich's own dumps in `/backup-pool/photos/immich/backups`
-  (`immich-db-backup-<time>-v<version>-pg<version>.sql.gz`). Immich only
-  makes one when Aurora is on at the time set in Immich, so the newest can
-  be days older than the photos. They hold the database's contents only and
-  need an existing, empty `immich` database to load into.
-
-Either replaces the whole database, and needs the `immich` database user
-to exist; on a reinstalled Aurora the NixOS module has created it. Check
-the steps against "Backup and restore" in Immich's documentation for the
-installed version. With the first kind:
-
-```bash
-sudo systemctl stop immich-server immich-machine-learning
-sudo -u postgres dropdb --if-exists immich
-sudo cat /root/restore/var/backup/postgresql/immich.sql \
-  | sed "s/SELECT pg_catalog.set_config('search_path', '', false);/SELECT pg_catalog.set_config('search_path', 'public, pg_catalog', true);/g" \
-  | sudo -u postgres psql --dbname=postgres
-sudo systemctl start immich-server immich-machine-learning
-```
-
-With one of Immich's own dumps, create the database first
-(`sudo -u postgres createdb --owner=immich immich`), then use
-`gunzip --stdout <dump>.sql.gz` in place of `sudo cat ...` and
-`--dbname=immich` in place of `--dbname=postgres`.
-
-Three errors about an extension called `vectors` are expected: the
-database still lists that old extension, which Postgres here no longer
-ships, and Immich now uses `vchord`. Any other error is a real one.
-
-Restore a dump into the Immich version it was made with or a newer one,
-never an older one. Photos uploaded after a dump was made are on the disk
-but unknown to the database.
-
-Rehearsed in part on 2026-10-13 with a second Postgres in a scratch folder,
-once with each kind of dump. The Postgres dump from that evening's archive
-(866 MB) was extracted in under a minute and loaded in 31 seconds with only
-those three errors; Immich's own newest dump (328 MB, two days old) did the
-same. Both gave the same numbers of photos, users and albums as the live
-database. Each time, 25 photos picked from the restored database were then
-extracted from the archive, and every one matched the checksum Immich had
-recorded for it. Not tried: starting Immich on the restored database, and
-restoring the whole photo folder.
+Moved to Nara (2026-10-19): see "Restoring Immich" in
+[Nara's README](../hosts/Nara/README.md).
 
 ## What is not backed up
 
 So that nobody goes looking for it in a repository:
 
-- **`/external-pool`** (2.5 TB, mostly media). An old Pika Backup
+- **`/external-pool/media`** (about 2 TB). An old Pika Backup
   repository of this disk exists on the second storage box, last written in
   November 2025; nothing updates it.
 - **`/mnt/storage`**: the Steam library, `Games` and the `GitHub` clones.

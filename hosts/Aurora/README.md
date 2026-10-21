@@ -84,60 +84,58 @@ archives:
 
 | Job | What | Repository |
 |---|---|---|
-| `immich` | `/backup-pool/photos/immich` and a Postgres dump of Immich's database | `immich` |
 | `home` | `/backup-pool/documents` (except Paperless's files) and the home folders listed in `backup.nix` | `home` |
 | `paperless` | Paperless's export of every document with its metadata | `services` |
 
-The last one makes that copy fresh before each run, and so does `immich`
-for its database dump; Paperless is stopped for the moment its export
-takes.
+The last one makes that copy fresh before each run; Paperless is stopped
+for the moment its export takes. Immich's photos, which used to have a job
+here too, moved to Nara with Immich: their backup is now the mirror below
+("Immich's mirror"), and their old `immich` repository on the storage box
+is retired (2026-10-21).
 
-`immich` and `home` continue the repositories Pika Backup created, with
-the same archive prefixes, so the older archives are still there and are
-pruned by the same rule. The small services share the `services`
+`home` continues the repository Pika Backup created, with the same archive
+prefix, so the older archives are still there and are pruned by the same
+rule. The small services share the `services`
 repository, one job each with its own archive prefix; a service that
 outgrows it can be pointed at a repository of its own. A failed run shows up in the health reports above. Once a month each
 repository and its newest archive's index are checked for consistency.
-That doesn't read the data back, with one exception: the dump of Immich's
-database in the newest archive is downloaded and checked to be complete. To
-run the check now:
+That doesn't read the data back. To run the check now:
 
 ```bash
 sudo systemctl start borgbackup-check && journalctl -u borgbackup-check -n 5 --no-pager -o cat
 ```
 
-Also once a month, four of the five backups are restored into a scratch
-folder and looked at (`borgbackup-restore-test-<job>`, in
-`backup.nix`), because an archive can pass the check above and still hold
-something useless:
+Also once a month, the Paperless backup is restored into a scratch folder
+and looked at (`borgbackup-restore-test-paperless`, in `backup.nix`),
+because an archive can pass the check above and still hold something
+useless:
 
 | Test | Passes when |
 |---|---|
 | `paperless` | Every document in the export's manifest is there and matches the checksum recorded for it |
-| `immich` | The database dump loads into an empty Postgres, and 25 photos picked at random from it are in the archive with the checksum Immich recorded for them |
 
-They fail, and show up in the health reports, only on such a hard fault;
-they don't start the services on the restored data, and write nothing
-outside their scratch folder. `home` has no test: it holds plain files with
-nothing to check them against. All four take about four minutes together.
-To run one now:
+It fails, and shows up in the health reports, only on such a hard fault;
+it doesn't start Paperless on the restored data, and writes nothing outside
+its scratch folder. `home` has no test: it holds plain files with nothing to
+check them against. To run it now:
 
 ```bash
-sudo systemctl start borgbackup-restore-test-immich && journalctl -u borgbackup-restore-test-immich -n 3 --no-pager -o cat
+sudo systemctl start borgbackup-restore-test-paperless && journalctl -u borgbackup-restore-test-paperless -n 3 --no-pager -o cat
 ```
 
 ```bash
-sudo borg-job-immich list                  # archives
-sudo systemctl start borgbackup-job-immich # back up now
-journalctl -u borgbackup-job-immich -n 30  # what the last run did
+sudo borg-job-home list                  # archives
+sudo systemctl start borgbackup-job-home # back up now
+journalctl -u borgbackup-job-home -n 30  # what the last run did
 ```
 
-To restore, mount an archive and copy out of it (`home` works the same):
+To restore, mount an archive and copy out of it (`paperless` works the
+same):
 
 ```bash
-sudo mkdir -p /mnt/borg && sudo borg-job-immich mount ::<archive> /mnt/borg
+sudo mkdir -p /mnt/borg && sudo borg-job-home mount ::<archive> /mnt/borg
 # ... copy what is needed from /mnt/borg ...
-sudo borg-job-immich umount /mnt/borg
+sudo borg-job-home umount /mnt/borg
 ```
 
 Everything about one repository carries the same name: `repo = "<name>"`
@@ -189,79 +187,9 @@ sudo rsync -aH --info=progress2 /backup-pool/photos/immich/ /external-pool/immic
 sudo systemctl start immich-mirror
 ```
 
-## Postgres after a glibc update
-
-The same applies to Ginza, which runs Forgejo's database; its README
-points here.
-
-Postgres sorts text by the rules of the system's C library (glibc) and
-stores its text indexes in that order. Each database records the glibc
-version it was last indexed under. When a NixOS update brings a newer
-glibc, every connection prints
-
-```
-WARNING:  database "immich" has a collation version mismatch
-```
-
-because the old indexes might no longer be in the right order. Nothing is
-broken by the update itself, and the backups aren't affected (a dump holds
-no index order), but the warning stays until each database's indexes are
-rebuilt and the new version recorded. It shows up in the logs of the
-database dumps the backups make.
-
-A daily check (`postgres-collation-check`, `custom.postgres-collation` in
-`modules/nixos/postgres-collation.nix`) fails while any
-database is behind, so it arrives as a failed unit in the
-[health reports](#health-reports), within a day of the update or ten
-minutes after the next boot.
-
-To see the glibc version each database was last indexed under, next to the
-system's (this changes nothing):
-
-```bash
-sudo postgres-refresh-collation
-```
-
-```
-database | indexed under glibc | system glibc | state
-immich | 2.44 | 2.44 | ok
-template0 | none | 2.44 | never warns
-...
-```
-
-To fix the ones marked `BEHIND`:
-
-```bash
-sudo postgres-refresh-collation --fix
-```
-
-It makes a fresh dump of Immich's database, then takes one
-database at a time, smallest first: stops the services that use it,
-rebuilds its indexes, records the new version and starts the services
-again. It ends by running the check, which clears the alert.
-
-The command (`modules/nixos/postgres-collation.nix`) knows which services
-use which database from the `databaseServices` list in `services.nix`
-(`custom.postgres-collation`). A database that isn't in that list is
-skipped and the check keeps failing: add it to the list, with its services,
-and rebuild.
-
-By hand, the same thing for one database is:
-
-```bash
-sudo -u postgres psql -d immich -c 'REINDEX DATABASE immich' -c 'REINDEX SYSTEM immich' -c 'ALTER DATABASE immich REFRESH COLLATION VERSION'
-sudo systemctl start postgres-collation-check
-```
-
-Don't run the `ALTER DATABASE` step alone: it silences the warning without
-rebuilding anything.
-
-Last done on 2026-10-13, for glibc 2.40 to 2.44: 3 seconds for `forgejo`,
-18 for `immich`, a second for each of the rest.
-
 ## Secrets
 
-Ten secrets are managed with agenix (`secrets.nix`; the encrypted files are
+Nine secrets are managed with agenix (`secrets.nix`; the encrypted files are
 in `aurora/` of the private secrets repo), decrypted at activation into
 `/run/agenix/`:
 
@@ -270,7 +198,7 @@ in `aurora/` of the private secrets repo), decrypted at activation into
 | `heartbeat-url` | The health reports above |
 | `cache-credentials` | Nix, to read the private binary cache (linked to `/root/.aws/credentials`) |
 | `borg-ssh-config`, `borg-ssh-key` | The backups: how to reach the storage box, and the key for it |
-| `borg-immich-passphrase`, `borg-home-passphrase`, `borg-services-passphrase` | The backups: each repository's passphrase |
+| `borg-home-passphrase`, `borg-services-passphrase` | The backups: each repository's passphrase |
 | `immich-mirror-ssh-key` | Pulling the mirror of Immich's library from Nara |
 | `paperless.env` | Paperless's svc:paperless address (`PAPERLESS_URL`, `PAPERLESS_ALLOWED_HOSTS`) |
 | `beszel-agent.env` | Beszel's agent (shared with the other hosts) |

@@ -25,7 +25,6 @@
     # repository's passphrase
     "borg-ssh-config".file = "${inputs.secrets}/aurora/borg-ssh-config.age";
     "borg-ssh-key".file = "${inputs.secrets}/aurora/borg-ssh-key.age";
-    "borg-immich-passphrase".file = "${inputs.secrets}/aurora/borg-immich-passphrase.age";
     "borg-home-passphrase".file = "${inputs.secrets}/aurora/borg-home-passphrase.age";
     "borg-services-passphrase".file = "${inputs.secrets}/aurora/borg-services-passphrase.age";
     # The key the mirror of Immich's library is pulled from Nara with

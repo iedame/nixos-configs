@@ -64,9 +64,7 @@ let
 
   # The monthly restore tests at the end of this file. Each restores the
   # newest archive of one job into a scratch folder, checks what came back
-  # and deletes the folder again. Nothing live is written to: the only
-  # things they start are, for two of them, a second Postgres that listens
-  # on a socket inside the scratch folder.
+  # and deletes the folder again. Nothing live is written to.
   restoreTest =
     name:
     {
@@ -91,13 +89,7 @@ let
         borg=/run/current-system/sw/bin/borg-job-${name}
         scratch=$(mktemp -d /var/tmp/restore-test-${name}.XXXXXX)
         chmod 711 "$scratch"
-        cleanup() {
-          if [ -f "$scratch/pg/postmaster.pid" ]; then
-            runuser -u postgres -- pg_ctl -D "$scratch/pg" -m immediate stop > /dev/null 2>&1 || true
-          fi
-          rm -rf "$scratch"
-        }
-        trap cleanup EXIT
+        trap 'rm -rf "$scratch"' EXIT
         cd "$scratch"
         archive=$($borg list --lock-wait 3600 --glob-archives '${
           config.services.borgbackup.jobs.${name}.archiveBaseName
@@ -116,25 +108,6 @@ let
     };
   };
 
-  # A second Postgres for a test to load a dump into: the same package and
-  # preloaded libraries as the real one, its own empty data folder, and no
-  # network port, only a socket in the scratch folder. `sql` talks to it.
-  postgres = config.services.postgresql.finalPackage;
-  scratchPostgres = ''
-    mkdir pg sock
-    chown postgres pg sock
-    chmod 700 sock
-    runuser -u postgres -- initdb -D "$scratch/pg" -A trust -E UTF8 > /dev/null
-    runuser -u postgres -- pg_ctl -D "$scratch/pg" -w -l "$scratch/pg/server.log" \
-      -o "-c listen_addresses=''' -c unix_socket_directories=$scratch/sock -c shared_preload_libraries=${
-        toString (config.services.postgresql.settings.shared_preload_libraries or "")
-      }" start > /dev/null
-    sql() {
-      runuser -u postgres -- psql --no-psqlrc --quiet --tuples-only --no-align \
-        --host="$scratch/sock" --username=postgres "$@"
-    }
-  '';
-  dumps = config.services.postgresqlBackup.location;
 in
 {
   # Daily, encrypted, off-site backups with Borg. A failed run leaves a
@@ -150,24 +123,6 @@ in
   };
 
   services.borgbackup.jobs = {
-    # The Immich photo library. This repository and the next continue
-    # the ones Pika Backup created, so they keep Pika's archive prefixes:
-    # old and new archives then fall under the same retention rule.
-    immich =
-      job {
-        repo = "immich";
-        prefix = "14d8a7";
-      }
-      // {
-        # The photos, and a dump of Immich's database made just before
-        # (services.nix): one without the other can't be restored
-        paths = [
-          "/backup-pool/photos/immich"
-          "${config.services.postgresqlBackup.location}/immich.sql"
-        ];
-        preHook = poolMounted + refresh "postgresqlBackup-immich.service";
-      };
-
     # Documents and the home folders worth keeping
     home =
       job {
@@ -221,36 +176,14 @@ in
   # storage box itself, so nothing is downloaded) and of its newest
   # archive's index. It doesn't read the backed-up data back: that would
   # mean downloading all of it.
-  #
-  # One file is read back, though: the dump of Immich's database. Unlike a
-  # photo, a damaged or cut-off dump can't be noticed by looking. The one
-  # in the newest archive is downloaded and checked to end with pg_dump's
-  # closing comment (a few lines from the end: a marker line follows it).
   systemd.services.borgbackup-check = {
     description = "Check the Borg repositories";
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
-    path = [
-      pkgs.coreutils
-      pkgs.gnugrep
-    ];
     serviceConfig.Type = "oneshot";
-    script =
-      lib.concatMapStrings (name: ''
-        /run/current-system/sw/bin/borg-job-${name} check --lock-wait 3600 --last 1
-      '') (lib.attrNames config.services.borgbackup.jobs)
-      + ''
-        set -o pipefail
-        borg=/run/current-system/sw/bin/borg-job-immich
-        archive=$($borg list --lock-wait 3600 --last 1 --format '{archive}{NL}')
-        dump=${lib.removePrefix "/" config.services.postgresqlBackup.location}/immich.sql
-        if ! $borg extract --lock-wait 3600 --stdout "::$archive" "$dump" \
-          | tail -n 20 | grep -q 'PostgreSQL database dump complete'; then
-          echo "archive $archive holds no complete dump of Immich's database ($dump)"
-          exit 1
-        fi
-        echo "Immich database dump complete: $dump in $archive"
-      '';
+    script = lib.concatMapStrings (name: ''
+      /run/current-system/sw/bin/borg-job-${name} check --lock-wait 3600 --last 1
+    '') (lib.attrNames config.services.borgbackup.jobs);
   };
   systemd.timers.borgbackup-check = {
     description = "Check the Borg repositories monthly";
@@ -303,68 +236,4 @@ in
   };
   systemd.timers.borgbackup-restore-test-paperless = restoreTestTimer "paperless";
 
-  # Immich: the database dump loads into an empty Postgres, and 25 photos
-  # picked at random from that database are in the archive with the
-  # checksum Immich recorded for them. The whole library is never read
-  # back: it is hundreds of GB.
-  systemd.services.borgbackup-restore-test-immich = restoreTest "immich" {
-    packages = [ postgres ];
-    script = ''
-      dump=${lib.removePrefix "/" dumps}/immich.sql
-      $borg extract --lock-wait 3600 "::$archive" "$dump"
-    ''
-    + scratchPostgres
-    + ''
-      # The dump re-creates the database but not its owner. The sed is from
-      # Immich's restore instructions (docs/aurora-recovery.md).
-      sql --dbname=postgres --command='CREATE ROLE ${config.services.immich.database.user} LOGIN'
-      sed "s/SELECT pg_catalog.set_config('search_path', ''', false);/SELECT pg_catalog.set_config('search_path', 'public, pg_catalog', true);/g" "$scratch/$dump" \
-        | sql --dbname=postgres > /dev/null 2> load.log || true
-      # The database still lists an extension, "vectors", that Postgres
-      # here no longer has; the errors about it are expected
-      if grep 'ERROR:' load.log | grep -v vectors > errors.log; then
-        echo "the dump didn't load cleanly:"
-        sort errors.log | uniq -c | sort -rn | head -n 10
-        exit 1
-      fi
-      db=${config.services.immich.database.name}
-      assets=$(sql --dbname="$db" --command="SELECT coalesce(to_regclass('public.asset'), to_regclass('public.assets'))")
-      total=$(sql --dbname="$db" --command="SELECT count(*) FROM $assets WHERE \"deletedAt\" IS NULL")
-      if [ "$total" -lt 1 ]; then
-        echo "the restored database knows no photos"
-        exit 1
-      fi
-
-      media=${lib.removeSuffix "/" config.services.immich.mediaLocation}
-      sql --dbname="$db" --field-separator=$'\t' --command="
-        SELECT encode(checksum, 'hex'), \"originalPath\" FROM $assets
-        WHERE \"deletedAt\" IS NULL AND \"originalPath\" LIKE '$media/%'
-        ORDER BY random() LIMIT 25" > sample.tsv
-      paths=()
-      sums=()
-      while IFS=$'\t' read -r sum path; do
-        paths+=("''${path#/}")
-        sums+=("$sum")
-      done < sample.tsv
-      if [ "''${#paths[@]}" -lt 1 ]; then
-        echo "no photo under $media to sample"
-        exit 1
-      fi
-      mkdir photos
-      (cd photos && $borg extract --lock-wait 3600 "::$archive" "''${paths[@]}") || true
-      bad=0
-      for i in "''${!paths[@]}"; do
-        file=photos/''${paths[$i]}
-        if [ ! -f "$file" ] || [ "$(sha1sum "$file" | cut -d' ' -f1)" != "''${sums[$i]}" ]; then
-          echo "sampled photo $((i + 1)) is missing from the archive or doesn't match its checksum"
-          bad=$((bad + 1))
-        fi
-      done
-      if [ "$bad" -gt 0 ]; then
-        exit 1
-      fi
-      echo "restored and intact: database with $total photos and videos; ''${#paths[@]} sampled files match their checksums"
-    '';
-  };
-  systemd.timers.borgbackup-restore-test-immich = restoreTestTimer "immich";
 }
