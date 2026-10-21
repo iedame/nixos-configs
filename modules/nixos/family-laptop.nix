@@ -266,6 +266,16 @@ in
           "b43"
           "bcma"
         ];
+        # The driver stops passing traffic under sustained heavy load, with
+        # nothing in the logs, until the next reboot: on Tsukuba (2026-10-21)
+        # a minute of the update's downloads at full speed (25 at once,
+        # about 32 MiB/s) froze it. Fewer downloads at once, and a cap on
+        # their speed, keep the weekly update on Wi-Fi from doing that. The
+        # cap is per download (KiB/s), so at most 4 x 2 MiB/s.
+        nix.settings = {
+          http-connections = 4;
+          download-speed = 2048;
+        };
         nixpkgs.config.allowInsecurePredicate = pkg: lib.getName pkg == "broadcom-sta";
       })
 
