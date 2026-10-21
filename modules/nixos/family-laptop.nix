@@ -241,7 +241,27 @@ in
         # package's full name. The kernel's own drivers for these cards
         # must not load alongside it.
         boot.kernelModules = [ "wl" ];
-        boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+        boot.extraModulePackages = [
+          # TEMPORARY, until nixpkgs fixes broadcom-sta for
+          # https://github.com/NixOS/nixpkgs/issues/575192: the kernel's
+          # module collection now expects each module's signing certificate
+          # (wl.ko.cer), which only `make modules_install` with the
+          # kernel's module flags produces, while the package copies wl.ko
+          # by hand. Drop this override once nixpkgs has the fix.
+          (config.boot.kernelPackages.broadcom_sta.overrideAttrs (old: {
+            makeFlags = config.boot.kernelPackages.kernelModuleMakeFlags ++ old.makeFlags;
+            installPhase = with config.boot.kernelPackages; ''
+              runHook preInstall
+              local flagsArray=()
+              concatTo flagsArray makeFlags makeFlagsArray
+              KBUILD_NOPEDANTIC=1 make -C ${kernel.dev}/lib/modules/${kernel.modDirVersion}/build \
+                M="$PWD" "''${flagsArray[@]}" INSTALL_MOD_PATH="$out" \
+                INSTALL_MOD_DIR=kernel/net/wireless DEPMOD=true modules_install
+              install -Dm644 lib/LICENSE.txt -t "$out/share/doc/broadcom-sta"
+              runHook postInstall
+            '';
+          }))
+        ];
         boot.blacklistedKernelModules = [
           "b43"
           "bcma"
