@@ -168,7 +168,11 @@ library (its `immich-mirror` account).
 A run fails, and the heartbeat reports it, if the dataset isn't mounted,
 if Nara's library looks missing (no `library/.immich`), or if it would
 delete more than 2000 files; a real mass deletion then needs a run by
-hand with a higher `--max-delete`.
+hand with a higher `--max-delete`. A failed run is tried again 5 minutes
+later, three times in all, before it counts as failed: the run that
+catches up at boot can start before Nara is reachable. Those three
+starts are the limit for 6 hours, runs by hand included; after a failure,
+`sudo systemctl reset-failed immich-mirror` allows a new start at once.
 
 ```bash
 sudo systemctl start immich-mirror                  # pull now
