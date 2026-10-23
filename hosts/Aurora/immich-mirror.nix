@@ -42,8 +42,18 @@ in
     environment.RSYNC_RSH = "ssh -i ${
       config.age.secrets."immich-mirror-ssh-key".path
     } -o IdentitiesOnly=yes -o BatchMode=yes -o UserKnownHostsFile=${knownHosts} -o StrictHostKeyChecking=yes";
+    # The run that catches up at boot can start before Nara is reachable
+    # over Tailscale (on 2026-10-23 its connection timed out two minutes
+    # after boot): a failed run is tried again 5 minutes later, three times
+    # in all, before it counts as failed, which the heartbeat reports. The
+    # limit covers every start in 6 hours, so a guard that keeps failing
+    # (the pool missing, too many deletions) stops there.
+    startLimitBurst = 3;
+    startLimitIntervalSec = 6 * 60 * 60;
     serviceConfig = {
       Type = "oneshot";
+      Restart = "on-failure";
+      RestartSec = "5min";
       Nice = 10;
       IOSchedulingClass = "idle";
     };
