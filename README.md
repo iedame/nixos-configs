@@ -120,6 +120,8 @@ A host without the file still works: Nix prints a warning and uses
 
 ## Recovery
 
+- [Backups](docs/backups.md): what is backed up where, what each copy
+  protects against, and what isn't covered.
 - [Restoring a large Borg archive from far away](docs/borg-remote-restore.md):
   the October 2026 restore of 4.8 TB from Helsinki, with the commands.
 - [Aurora](docs/aurora-recovery.md): reinstalling after losing the system
