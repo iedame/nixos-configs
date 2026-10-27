@@ -26,7 +26,7 @@ jobs:
       #   - repository secret   BOT_PRIVATE_KEY (a private key generated for it)
       - name: Get a token for the bot
         id: bot-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.BOT_CLIENT_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
@@ -42,12 +42,12 @@ jobs:
           echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v35
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
         with:
           nix_conf: |
             keep-outputs = true
@@ -55,7 +55,7 @@ jobs:
       # The `secrets` flake input is a private repo fetched over SSH; this
       # loads a read-only deploy key for it (repo secret SECRETS_DEPLOY_KEY)
       - name: Load deploy key for the secrets repo
-        uses: webfactory/ssh-agent@v0.10.0
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.SECRETS_DEPLOY_KEY }}
 
@@ -97,7 +97,7 @@ jobs:
       # notifies me whatever my watch setting for the repository is.
       - name: Create pull request
         if: steps.check_changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ steps.bot-token.outputs.token }}
           author: ${{ steps.bot.outputs.identity }}

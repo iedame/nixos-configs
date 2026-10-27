@@ -118,6 +118,12 @@ A host without the file still works: Nix prints a warning and uses
 - [Aurora](docs/aurora-recovery.md): reinstalling after losing the system
   disk, re-creating the pool, and restoring each service from the backups.
 
+## Workarounds and pins
+
+[docs/workarounds.md](docs/workarounds.md) lists every temporary fix and
+every version pinned for a reason, each with what makes it removable.
+Check it after each lock update.
+
 ## Secrets
 
 Secrets are encrypted with [agenix](https://github.com/ryantm/agenix) and
