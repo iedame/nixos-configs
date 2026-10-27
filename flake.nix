@@ -299,6 +299,13 @@
 
       checks = forAllSystems (system: {
         formatting = treefmt.${system}.config.build.check self;
+        # Rules every host keeps (SSH, firewall, monitoring), checked by
+        # evaluating each one
+        invariants = import ./checks/invariants.nix {
+          inherit (inputs.nixpkgs) lib;
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+          inherit (self) nixosConfigurations darwinConfigurations;
+        };
       });
     };
 }

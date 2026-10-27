@@ -28,6 +28,8 @@ modules/nixos/            NixOS modules        (nixosModules.default)
 modules/darwin/           nix-darwin modules   (darwinModules.default)
 modules/home-manager/     home-manager modules (homeModules.default)
 lib/hosts.nix             the hosts' addresses and the admin SSH key, as data
+checks/invariants.nix     rules every host keeps, checked by `nix flake check`
+docs/                     handbooks, and the register of workarounds and pins
 ```
 
 The agenix-encrypted secrets live in a separate private repository (the
@@ -71,8 +73,13 @@ Format with `nix fmt` (treefmt-nix): it runs nixfmt over every Nix file and
 keep-sorted over the package lists, which sit between `# keep-sorted start`
 and `# keep-sorted end` comments. Add a package anywhere in such a list and
 `nix fmt` puts it in order. `nix flake check` includes a `formatting` check
-that fails on anything unformatted or unsorted. Flake inputs are updated
-twice a week (Tuesdays and Fridays) by a GitHub Actions PR.
+that fails on anything unformatted or unsorted, and an `invariants` check
+([checks/invariants.nix](checks/invariants.nix)) that fails when a host
+breaks a rule they all keep: SSH only over Tailscale, with keys and without
+root; no port open outside Tailscale; the firewall, Tailscale, the
+heartbeat and Beszel on. A host that may leave a rule is named there, with
+the reason. Flake inputs are updated twice a week (Tuesdays and Fridays) by
+a GitHub Actions PR.
 
 ## Binary cache
 
