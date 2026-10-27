@@ -151,6 +151,21 @@ another Storage Box sub-account:
 3. Declare that secret in `secrets.nix` and add the job to `backup.nix`,
    with `doInit = true` if the repository doesn't exist yet.
 
+The storage box takes a snapshot of itself every day at 08:00 UTC
+(05:00 in São Paulo) and keeps the last 10 (set in Hetzner's console, since
+2026-10-27). This machine holds the backup key, so if it were
+compromised it could delete its own archives; the snapshots are out of
+its reach, so for 10 days the repositories can still be had as they were.
+The sub-accounts don't see them. To get a repository back:
+
+- **One repository**: in the console, make the main account's `.zfs`
+  folder visible, then copy `/.zfs/snapshot/<snapshot>/<repository
+  folder>/` back over SFTP as the main account, and run `borg check` on
+  it before use.
+- **The whole box**: the console can roll it back to a snapshot. That
+  rolls back everything on it, Immich's library on Nara included, and
+  loses whatever changed since, so copy out first what must be kept.
+
 The storage box's account names, the SSH key it accepts and the
 repository passphrases are agenix secrets (below). Without a repository's
 passphrase its backup can't be read; both are also in 1Password.
