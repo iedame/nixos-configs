@@ -31,7 +31,7 @@ jobs:
     # key. Secrets aren't available to pull requests from forks: skip those
     # instead of failing halfway.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -100,30 +100,33 @@ jobs:
         xwayland
     strategy:
       fail-fast: false
+      # Runner images are pinned, not -latest, so a new Ubuntu or macOS
+      # arrives when bumped here (the sandbox step below is specific to
+      # Ubuntu 24.04). macOS follows Kawagoe's version.
       matrix:
         include:
           - host: Aurora
-            os: ubuntu-latest
+            os: ubuntu-24.04
             attr: nixosConfigurations.Aurora.config.system.build.toplevel
           - host: Tsukuba
-            os: ubuntu-latest
+            os: ubuntu-24.04
             attr: nixosConfigurations.Tsukuba.config.system.build.toplevel
           - host: Kawaguchiko
-            os: ubuntu-latest
+            os: ubuntu-24.04
             attr: nixosConfigurations.Kawaguchiko.config.system.build.toplevel
           - host: Akihabara
-            os: ubuntu-latest
+            os: ubuntu-24.04
             attr: nixosConfigurations.Akihabara.config.system.build.toplevel
           # cache_all: the host can't build its own system (1 GB of memory)
           # and downloads it from the cache instead, so all of it is
           # uploaded, not only the CACHE_PACKAGES entries. Its configuration
           # refuses unfree packages for that reason.
           - host: Narita
-            os: ubuntu-latest
+            os: ubuntu-24.04
             attr: nixosConfigurations.Narita.config.system.build.toplevel
             cache_all: true
           - host: Nikko
-            os: ubuntu-latest
+            os: ubuntu-24.04
             attr: nixosConfigurations.Nikko.config.system.build.toplevel
             cache_all: true
           # The Oracle Arm instance: built on GitHub's Arm runner, and like
@@ -139,7 +142,7 @@ jobs:
             attr: nixosConfigurations.Nara.config.system.build.toplevel
             cache_all: true
           - host: Kawagoe
-            os: macos-latest
+            os: macos-26
             attr: darwinConfigurations.Kawagoe.system
     steps:
       - name: Checkout
@@ -473,7 +476,7 @@ jobs:
     needs: build
     # Also when one host failed to build, so the other's diff still shows
     if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pull-requests: write
     steps:
