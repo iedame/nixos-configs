@@ -83,7 +83,10 @@ What can be lost, and where it comes back from:
   share's `backups/` (made daily at 13:00) into the fresh install, as
   below. Photos uploaded after that dump are on the share but unknown to
   the database until they are uploaded again.
-- **The share's contents** (the storage box, or files deleted on it):
+- **Files deleted or damaged on the share**: the storage box takes a
+  snapshot of itself every day at 08:00 UTC and keeps the last 10, out of
+  reach of this machine and its sub-account (Aurora's README, "Backups",
+  says how to copy from one). For anything older, or the whole box lost:
   Aurora's mirror (`external-pool/immich`, Aurora's README, "Immich's
   mirror") holds the library as of its last pull, plus 30 daily snapshots
   to go back further. Copy it back to the share with rsync over Tailscale
