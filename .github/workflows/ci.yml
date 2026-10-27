@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Ubuntu 24.04 blocks unprivileged user namespaces through AppArmor,
       # and single-user Nix needs them for its build sandbox. Without them
@@ -46,14 +46,14 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v35
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
         with:
           nix_conf: |
             sandbox = true
             sandbox-fallback = false
 
       - name: Load deploy key for the secrets repo
-        uses: webfactory/ssh-agent@v0.10.0
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.SECRETS_DEPLOY_KEY }}
 
@@ -102,7 +102,8 @@ jobs:
       fail-fast: false
       # Runner images are pinned, not -latest, so a new Ubuntu or macOS
       # arrives when bumped here (the sandbox step below is specific to
-      # Ubuntu 24.04). macOS follows Kawagoe's version.
+      # Ubuntu 24.04). macOS follows Kawagoe's version. Both are listed in
+      # docs/workarounds.md (WA-3, WA-4).
       matrix:
         include:
           - host: Aurora
@@ -146,14 +147,14 @@ jobs:
             attr: darwinConfigurations.Kawagoe.system
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Aurora's system is far bigger than the runner's free disk; this
       # removes preinstalled software and gives the space to /nix. Not on the
       # Arm runner: Ginza's system fits as it is.
       - name: Free disk space
         if: runner.os == 'Linux' && runner.arch == 'X64'
-        uses: wimpysworld/nothing-but-nix@v10
+        uses: wimpysworld/nothing-but-nix@687c797a730352432950c707ab493fcc951818d7 # v10
         with:
           hatchet-protocol: rampage
           witness-carnage: true
@@ -165,7 +166,7 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v35
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
         with:
           # The sandbox as on the hosts (relaxed on macOS, like Kawagoe), and
           # never a quiet build without it. The key signs what the NixOS jobs
@@ -200,7 +201,7 @@ jobs:
           echo "NIX_CONFIG=extra-substituters = $store" >> "$GITHUB_ENV"
 
       - name: Load deploy key for the secrets repo
-        uses: webfactory/ssh-agent@v0.10.0
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.SECRETS_DEPLOY_KEY }}
 
@@ -461,7 +462,7 @@ jobs:
 
       - name: Upload the diff
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: diff-${{ matrix.host }}
           path: |
@@ -481,7 +482,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download the diffs
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: diff-*
           merge-multiple: true
