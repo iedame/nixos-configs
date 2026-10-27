@@ -173,6 +173,7 @@ later, three times in all, before it counts as failed: the run that
 catches up at boot can start before Nara is reachable. Those three
 starts are the limit for 6 hours, runs by hand included; after a failure,
 `sudo systemctl reset-failed immich-mirror` allows a new start at once.
+A rebuild never starts or restarts a run; the timer starts the next one.
 
 ```bash
 sudo systemctl start immich-mirror                  # pull now

@@ -50,6 +50,11 @@ in
     # (the pool missing, too many deletions) stops there.
     startLimitBurst = 3;
     startLimitIntervalSec = 6 * 60 * 60;
+    # A switch leaves a run alone (as nixpkgs does for nix-gc): one waiting
+    # between those tries would otherwise be started again at once, while
+    # the switch is restarting Tailscale, fail, and fail the switch with it
+    # (2026-10-27). The timer starts the next run with the new unit.
+    restartIfChanged = false;
     serviceConfig = {
       Type = "oneshot";
       Restart = "on-failure";
