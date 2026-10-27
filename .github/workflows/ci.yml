@@ -36,8 +36,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Ubuntu 24.04 blocks unprivileged user namespaces through AppArmor,
+      # and single-user Nix needs them for its build sandbox. Without them
+      # Nix quietly builds unsandboxed (sandbox-fallback), and what it builds
+      # here goes to the cache the hosts install from; with the fallback off
+      # below, every build would fail instead.
+      - name: Allow unprivileged user namespaces
+        if: runner.os == 'Linux'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
+        with:
+          nix_conf: |
+            sandbox = true
+            sandbox-fallback = false
 
       - name: Load deploy key for the secrets repo
         uses: webfactory/ssh-agent@v0.10.0
@@ -143,13 +156,22 @@ jobs:
           witness-carnage: true
           nix-permission-edict: true
 
+      # As in the check job: the namespaces the build sandbox needs
+      - name: Allow unprivileged user namespaces
+        if: runner.os == 'Linux'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
         with:
-          # The key signs what the NixOS jobs upload to the cache (empty, so
-          # ignored, until the CACHE_* variables are set)
+          # The sandbox as on the hosts (relaxed on macOS, like Kawagoe), and
+          # never a quiet build without it. The key signs what the NixOS jobs
+          # upload to the cache (empty, so ignored, until the CACHE_*
+          # variables are set)
           nix_conf: |
             keep-outputs = true
+            sandbox = ${{ runner.os == 'Linux' && 'true' || 'relaxed' }}
+            sandbox-fallback = false
             ${{ runner.os == 'Linux' && 'build-dir = /nix/build' || '' }}
             extra-trusted-public-keys = ${{ runner.os == 'Linux' && vars.CACHE_PUBLIC_KEY || '' }}
 
