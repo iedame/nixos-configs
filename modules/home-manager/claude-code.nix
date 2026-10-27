@@ -23,7 +23,15 @@ in
       # ~/.claude, so the tools are named mcp__plugin_hm_nixos__*.
       mcpServers.nixos = {
         type = "stdio";
-        command = lib.getExe pkgs.mcp-nixos;
+        # TEMPORARY: nixpkgs moved python3Packages.mcp to 2.x, which
+        # fastmcp (through fastmcp-slim, now marked broken) doesn't support
+        # yet. Build mcp-nixos against mcp 1.x, as nixpkgs did for ha-mcp
+        # (NixOS/nixpkgs#578535). Drop this once mcp-nixos evaluates again.
+        command = lib.getExe (
+          pkgs.mcp-nixos.override {
+            python3Packages = pkgs.python3Packages.overrideScope (final: prev: { mcp = final.mcp_1; });
+          }
+        );
       };
     };
 
