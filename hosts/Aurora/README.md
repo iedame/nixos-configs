@@ -158,13 +158,18 @@ compromised it could delete its own archives; the snapshots are out of
 its reach, so for 10 days the repositories can still be had as they were.
 The sub-accounts don't see them. To get a repository back:
 
-- **One repository**: in the console, make the main account's `.zfs`
-  folder visible, then copy `/.zfs/snapshot/<snapshot>/<repository
-  folder>/` back over SFTP as the main account, and run `borg check` on
-  it before use.
-- **The whole box**: the console can roll it back to a snapshot. That
-  rolls back everything on it, Immich's library on Nara included, and
-  loses whatever changed since, so copy out first what must be kept.
+- **One repository**: in the console, under the box's "Snapshots", turn
+  on "Display snapshot directory". Each snapshot is then a read-only
+  folder, `/.zfs/snapshot/<snapshot>/` (`/home/.zfs/snapshot/` over SSH
+  on port 23), holding the whole box as it was. Copy the repository's
+  folder from there back into place as the main account, and run `borg
+  check` on it before use.
+- **The whole box**: the console can restore a snapshot. That deletes
+  everything written since, on the whole box (Immich's library on Nara
+  included), and every newer snapshot with it, so copy out first what
+  must be kept.
+
+Hetzner's [snapshot docs](https://docs.hetzner.com/storage/storage-box/snapshots/).
 
 The storage box's account names, the SSH key it accepts and the
 repository passphrases are agenix secrets (below). Without a repository's
