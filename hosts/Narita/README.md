@@ -190,7 +190,8 @@ system isn't built on the instance but downloaded from the cache. It keeps
 Ubuntu's partitions. Everything else on the instance is lost.
 
 Two settings are needed in the host's `default.nix` for the conversion only,
-and are removed afterwards:
+and are removed afterwards (with the second, the host also goes into
+`sshToInternet` in `checks/invariants.nix`, or the flake check fails):
 
 ```nix
 # NixOS moves the old system aside on first boot (/etc/NIXOS_LUSTRATE),

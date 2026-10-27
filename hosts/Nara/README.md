@@ -157,7 +157,7 @@ half goes on the server only, through nixos-anywhere's `--extra-files`.
 4. Detach the ISO in Hetzner's console and reset the server, so it boots
    from the disk. Then, over the public address as `haoji`, with
    `custom.ssh-server.openToInternet = true` in `default.nix` for the
-   install: `sudo tailscale up --advertise-tags=tag:server`, and approve
+   install (and the host in `sshToInternet` in `checks/invariants.nix`): `sudo tailscale up --advertise-tags=tag:server`, and approve
    the login link.
 5. Afterwards: add the host's Tailscale address to `lib/hosts.nix`, remove
-   `openToInternet`, and delete the local copy of the host key.
+   `openToInternet` and its `sshToInternet` entry, and delete the local copy of the host key.
