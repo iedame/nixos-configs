@@ -65,7 +65,7 @@
     enable = true;
     # The current release, as on Aurora; the module's default is the
     # long-term one (forgejo-lts), which is older and refuses a database
-    # that a newer Forgejo has already migrated
+    # that a newer Forgejo has already migrated (WA-5, docs/workarounds.md)
     package = pkgs.forgejo;
     database.type = "postgres";
     lfs.enable = true;

@@ -261,12 +261,13 @@ in
         # must not load alongside it.
         boot.kernelModules = [ "wl" ];
         boot.extraModulePackages = [
-          # TEMPORARY, until nixpkgs fixes broadcom-sta for
-          # https://github.com/NixOS/nixpkgs/issues/575192: the kernel's
-          # module collection now expects each module's signing certificate
-          # (wl.ko.cer), which only `make modules_install` with the
-          # kernel's module flags produces, while the package copies wl.ko
-          # by hand. Drop this override once nixpkgs has the fix.
+          # TEMPORARY (WA-1, docs/workarounds.md), until nixpkgs fixes
+          # broadcom-sta for https://github.com/NixOS/nixpkgs/issues/575192:
+          # the kernel's module collection now expects each module's
+          # signing certificate (wl.ko.cer), which only `make
+          # modules_install` with the kernel's module flags produces, while
+          # the package copies wl.ko by hand. Drop this override once
+          # nixpkgs has the fix.
           (config.boot.kernelPackages.broadcom_sta.overrideAttrs (old: {
             makeFlags = config.boot.kernelPackages.kernelModuleMakeFlags ++ old.makeFlags;
             installPhase = with config.boot.kernelPackages; ''
