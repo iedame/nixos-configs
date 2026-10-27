@@ -1,8 +1,9 @@
 # nixos-configs
 
 NixOS and nix-darwin configuration for my machines, as a single flake with
-home-manager. Layout inspired by
-[matteo-pacini/nixos-configs](https://github.com/matteo-pacini/nixos-configs).
+home-manager. It's public to be read, not used as is: it won't evaluate
+without my private secrets repository (see [Secrets](#secrets)). Ideas from
+other people's configurations are credited at the [end](#credits).
 
 ## Hosts
 
@@ -159,3 +160,20 @@ If you're not me, the config won't evaluate as is: remove the `secrets` input
 and the `age.secrets` declarations, or point them at your own. Tsukuba and
 Kawaguchiko are the exception: they use no secrets, because they update
 themselves from this public repository.
+
+## Credits
+
+Ideas taken from other people's configurations, with thanks:
+
+- [matteo-pacini/nixos-configs](https://github.com/matteo-pacini/nixos-configs):
+  the layout (shared opt-in modules, `hosts/<Host>/` with per-user
+  home-manager), rebooting servers for a new kernel, Atuin for shell
+  history, and enforcing Nix's build sandbox in CI.
+- [ryan4yin/nix-config](https://github.com/ryan4yin/nix-config): the
+  [register of workarounds and pins](docs/workarounds.md), and pinning
+  GitHub Actions to commits. His
+  [NixOS & Flakes Book](https://nixos-and-flakes.thiscute.world/) is a good
+  place to start with flakes.
+- [Defelo's infra flake](https://radicle.defelo.de/nodes/radicle.defelo.de/rad:z24n4G1scWV247PfW2VPSEBTFj84n):
+  failing CI on evaluation warnings, the reboot notice on Aurora,
+  `needrestart` after an update, and pinning the storage boxes' host key.
