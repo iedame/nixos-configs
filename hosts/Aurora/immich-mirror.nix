@@ -12,8 +12,8 @@ let
   # this key, read-only and limited to Immich's library, so remote paths
   # are relative to the library
   source = "immich-mirror@${nara.address}:";
-  # How many snapshots to keep: one per run, so about a month of days on
-  # which Aurora was on
+  # How many snapshots to keep: one per day with a pull, so about a month
+  # of days on which Aurora was on
   keep = 30;
 in
 {
@@ -30,7 +30,6 @@ in
     description = "Pull a mirror of Immich's library from Nara";
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
-    startAt = "daily";
     path = [
       config.boot.zfs.package
       pkgs.coreutils
@@ -46,10 +45,10 @@ in
     # over Tailscale (on 2026-10-23 its connection timed out two minutes
     # after boot): a failed run is tried again 5 minutes later, three times
     # in all, before it counts as failed, which the heartbeat reports. The
-    # limit covers every start in 6 hours, so a guard that keeps failing
-    # (the pool missing, too many deletions) stops there.
+    # limit covers 30 minutes, so the hourly check below can start it again
+    # the next hour.
     startLimitBurst = 3;
-    startLimitIntervalSec = 6 * 60 * 60;
+    startLimitIntervalSec = 30 * 60;
     # A switch leaves a run alone (as nixpkgs does for nix-gc): one waiting
     # between those tries would otherwise be started again at once, while
     # the switch is restarting Tailscale, fail, and fail the switch with it
@@ -84,7 +83,31 @@ in
         | while read -r snapshot; do zfs destroy "$snapshot"; done
     '';
   };
-  # This machine is often off at the scheduled time: run when it is next
-  # on instead
-  systemd.timers.immich-mirror.timerConfig.Persistent = true;
+
+  # Every hour, start a pull unless today's has already succeeded (it made
+  # today's snapshot). So a day's pull happens at the first hour the
+  # machine is on and Nara is reachable: a failed one is tried again the
+  # next hour, not the next day (on 2026-10-29 the boot's tries ran out
+  # in 15 minutes without a network). A pull started by hand always runs.
+  systemd.services.immich-mirror-daily = {
+    description = "Start today's Immich mirror pull, unless it is done";
+    startAt = "hourly";
+    path = [
+      config.boot.zfs.package
+      config.systemd.package
+      pkgs.coreutils
+      pkgs.gnugrep
+    ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      if zfs list -H -t snapshot -o name -d 1 ${dataset} \
+        | grep --quiet "@mirror-$(date +%Y-%m-%d)-"; then
+        echo "Today's pull is done"
+      else
+        systemctl start --no-block immich-mirror.service
+      fi
+    '';
+  };
+  # This machine is often off: check when it is next on instead
+  systemd.timers.immich-mirror-daily.timerConfig.Persistent = true;
 }
