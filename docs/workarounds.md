@@ -12,20 +12,8 @@ update: a fix that outlives its reason is easy to forget.
 
 ## Temporary fixes
 
-| ID | What and where | Why | Remove when |
-|---|---|---|---|
-| WA-1 | broadcom-sta installed with `make modules_install` (`modules/nixos/family-laptop.nix`); since 2026-10-20 | nixpkgs [#575192](https://github.com/NixOS/nixpkgs/issues/575192): the kernel's module collection expects `wl.ko.cer`, which the package doesn't install, so Tsukuba and Kawaguchiko fail to build | The locked nixpkgs contains the fix, 862bc5c ([#576651](https://github.com/NixOS/nixpkgs/pull/576651), merged 2026-10-25). Check below. |
-| WA-2 | mcp-nixos built against mcp 1.x (`modules/home-manager/claude-code.nix`); since 2026-10-27 (#101) | nixpkgs moved `python3Packages.mcp` to 2.x, which marks fastmcp-slim broken, and mcp-nixos depends on it | `pkgs.mcp-nixos` evaluates without the override. Check below. |
-
-Checks, from the repository on Kawagoe:
-
-```bash
-# WA-1: "ahead" or "identical" means the locked nixpkgs has the fix ("behind": not yet)
-gh api repos/NixOS/nixpkgs/compare/862bc5c...$(nix flake metadata --json | jq -r .locks.nodes.nixpkgs.locked.rev) -q .status
-
-# WA-2: prints a store path once mcp-nixos evaluates again (an error: not yet)
-nix eval --raw .#darwinConfigurations.Kawagoe.pkgs.mcp-nixos.drvPath
-```
+None at the moment. Removed: WA-1, the broadcom-sta install fix, and
+WA-2, mcp-nixos on mcp 1.x, both with the lock update of 2026-10-29.
 
 ## Pins
 
