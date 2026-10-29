@@ -181,6 +181,9 @@ Immich runs on Nara since 2026-10-19. `immich-mirror.nix` keeps a copy of
 its library here, in the ZFS dataset `external-pool/immich`: every day
 this machine is on, it pulls the library from Nara over Tailscale with
 rsync (only what changed), then takes a snapshot, keeping the last 30.
+Every hour `immich-mirror-daily` starts the pull unless today's snapshot
+exists, so a day's pull happens at the first hour it can, and one that
+failed is tried again the next hour.
 Immich's own database dumps are in the library's `backups/`, so they come
 along. Nara accepts the job's key only for a read-only rsync of the
 library (its `immich-mirror` account).
@@ -191,9 +194,10 @@ delete more than 2000 files; a real mass deletion then needs a run by
 hand with a higher `--max-delete`. A failed run is tried again 5 minutes
 later, three times in all, before it counts as failed: the run that
 catches up at boot can start before Nara is reachable. Those three
-starts are the limit for 6 hours, runs by hand included; after a failure,
-`sudo systemctl reset-failed immich-mirror` allows a new start at once.
-A rebuild never starts or restarts a run; the timer starts the next one.
+starts are the limit for 30 minutes, runs by hand included; after a
+failure, `sudo systemctl reset-failed immich-mirror` allows a new start
+at once. A rebuild never starts or restarts a run. A run by hand always
+pulls, even after today's.
 
 ```bash
 sudo systemctl start immich-mirror                  # pull now
