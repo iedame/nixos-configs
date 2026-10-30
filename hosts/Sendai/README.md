@@ -35,7 +35,10 @@ SSD, and `common-gpu-nvidia-disable`.
   drivers, so nothing like Tsukuba's Broadcom setup.
 - **Video**: like the others, the Intel GPU decodes H.264 only, and the
   same browser settings apply.
-- **Battery**: works, so the CPU runs at full speed without help.
+- **Battery**: dead and unplugged, so it runs on its power adapter only,
+  and a power cut switches it off at once (unsaved work is lost; an
+  interrupted update is simply retried). Whether the firmware then holds
+  the CPU back, as on the MacBooks, is checked at install.
 
 ## Installing
 

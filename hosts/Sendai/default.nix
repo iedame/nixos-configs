@@ -10,11 +10,13 @@
 
   # Everything this laptop has in common with Tsukuba and Kawaguchiko:
   # desktop, browsers, automatic login and updates
-  # (modules/nixos/family-laptop.nix). Its Wi-Fi has a mainline driver, and
-  # its battery still holds the CPU at full speed.
+  # (modules/nixos/family-laptop.nix). Its Wi-Fi has a mainline driver.
   custom.family-laptop = {
     enable = true;
     user = "nayara";
+    # TODO at install: the battery is dead and unplugged. If the firmware
+    # then holds the CPU at its lowest speed, as the MacBooks' does, turn on
+    # fullSpeedWithoutBattery.
   };
 
   # The NVIDIA GPU (GTX 880M) is dead (error 43 in Windows): the hardware
