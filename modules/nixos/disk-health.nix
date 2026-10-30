@@ -45,6 +45,16 @@ let
       fi
     done < <(smartctl --scan | awk '{ print $1, $3 }')
 
+    ${lib.optionalString cfg.mdraid ''
+      for array in /sys/block/md*/md; do
+        [ -e "$array" ] || continue
+        if [ "$(cat "$array/degraded")" != 0 ]; then
+          echo "$(basename "$(dirname "$array")") is degraded:"
+          cat /proc/mdstat
+          problems=1
+        fi
+      done
+    ''}
     ${lib.optionalString cfg.zfs ''
       pools=$(zpool status -x)
       if [ "$pools" != "all pools are healthy" ] && [ "$pools" != "no pools available" ]; then
@@ -78,7 +88,8 @@ in
   # shows up in the heartbeat (heartbeat.nix), when a drive reports that it
   # is failing, has an attribute past its failure threshold, or has a
   # failed self-test. On a host with ZFS it also fails when a pool is
-  # anything but healthy.
+  # anything but healthy, and on one with software RAID when an array is
+  # missing a disk.
   #
   # A drive that can't be asked is mentioned in the log and otherwise
   # ignored: some USB enclosures don't pass SMART through at all, and
@@ -92,6 +103,12 @@ in
       default = config.boot.supportedFilesystems.zfs or false;
       defaultText = lib.literalExpression "config.boot.supportedFilesystems.zfs or false";
       description = "Also fail when a ZFS pool isn't healthy.";
+    };
+    mdraid = lib.mkOption {
+      type = lib.types.bool;
+      default = config.boot.swraid.enable;
+      defaultText = lib.literalExpression "config.boot.swraid.enable";
+      description = "Also fail when a software RAID (mdadm) array is missing a disk.";
     };
     interval = lib.mkOption {
       type = lib.types.str;

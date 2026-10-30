@@ -11,7 +11,7 @@ differs. The everyday account is `nayara`.
 | File | What's in it |
 |---|---|
 | `default.nix` | What is specific to this laptop: name, account, keyboard |
-| `disko.nix` | Disk layout, applied at install time |
+| `disko.nix` | Disk layout, applied at install time: the system SSD and the mirror for her files |
 | `hardware-configuration.nix` | Generated hardware settings |
 
 Everything else is in `modules/nixos/family-laptop.nix`, shared with
@@ -32,8 +32,17 @@ SSD, and `common-gpu-nvidia-disable`.
   the layout set here. The touchpad works.
 - **Disks**: three 128 GB mSATA SSDs (Toshiba THNSNH128GMCT, all healthy,
   about 27,500 hours each), which the BIOS combined into one RAID 0 volume
-  under Windows. RAID is off (SATA mode AHCI), and NixOS is on one SSD;
-  the other two are unused. The 1 TB hard disk was removed.
+  under Windows. The BIOS's RAID is off (SATA mode AHCI). NixOS is on the
+  first SSD; it needs no copy, as it can be rebuilt from this repository.
+  The other two are a mirror (Linux software RAID 1) for nayara's files,
+  mounted at `~/Arquivos`, which survives either SSD failing. The 1 TB
+  hard disk was removed.
+- **Disk health**: `custom.disk-health` watches the three SSDs (SMART, a
+  daily short self-test at 14:00 if the laptop is on) and the mirror; a
+  failing SSD or a mirror missing one shows up in the heartbeat. To see the
+  mirror: `cat /proc/mdstat` (`[UU]` is healthy). Files saved elsewhere
+  in her home are on the system SSD only, and nothing on the laptop is
+  backed up.
 - **Wi-Fi and Ethernet**: an Intel Centrino Ultimate-N 6300 (`iwlwifi`,
   with Intel's firmware, `hardware.enableRedistributableFirmware`) and a
   Killer E2200 (`alx`). No Bluetooth.
@@ -56,7 +65,7 @@ nixos-anywhere, with these differences:
 2. Boot the NixOS installer from a USB stick, with a USB keyboard and an
    Ethernet cable, then `passwd` and `ip a` as for Tsukuba.
 3. Read the SSDs' names (`ls -l /dev/disk/by-id/ | grep -v part`) and put
-   the one to install on in `disko.nix`.
+   them in `disko.nix`. The install formats all three.
 4. Install with `--flake .#Sendai` and
    `--generate-hardware-config nixos-generate-config ./hosts/Sendai/hardware-configuration.nix`,
    then set the two passwords (`haoji`, `nayara`).

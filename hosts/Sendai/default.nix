@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   imports = [
@@ -29,6 +29,22 @@
   # faulted as soon as anything drew on it (2026-10-30). The hardware
   # profile (flake.nix) keeps its drivers from loading and removes it at
   # boot, so it draws no power. The screen is the Intel GPU's.
+
+  # nayara's files are on a mirror of two SSDs (disko.nix), mounted in her
+  # home; the folder at its top is made hers once it is mounted
+  systemd.services.nayara-files-owner = {
+    description = "Give nayara the folder of her mirrored files";
+    after = [ "home-nayara-Arquivos.mount" ];
+    requires = [ "home-nayara-Arquivos.mount" ];
+    wantedBy = [ "home-nayara-Arquivos.mount" ];
+    serviceConfig.Type = "oneshot";
+    script = "chown nayara: /home/nayara/Arquivos && chmod 700 /home/nayara/Arquivos";
+  };
+  # A failing SSD, or a mirror missing one, fails a check that the
+  # heartbeat reports (modules/nixos/disk-health.nix). These SSDs are from
+  # 2014. mdadm itself writes its events to the journal.
+  custom.disk-health.enable = true;
+  boot.swraid.mdadmConf = "PROGRAM ${pkgs.util-linux}/bin/logger";
 
   # The built-in keyboard is unplugged (dead keys, and keys pressing by
   # themselves); a USB keyboard, Brazilian ABNT2, is used instead
