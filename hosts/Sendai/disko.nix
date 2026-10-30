@@ -8,8 +8,9 @@
   disko.devices.disk.main = {
     type = "disk";
     # By serial number rather than /dev/sda, which a USB stick can take.
-    # TODO: the SSD's /dev/disk/by-id name, read from the installer.
-    device = "/dev/disk/by-id/TODO";
+    # The three are the same model (Toshiba THNSNH128GMCT) and equally
+    # healthy (SMART, 2026-10-30); this one was /dev/sda.
+    device = "/dev/disk/by-id/ata-TOSHIBA_THNSNH128GMCT_146S107FT71Y";
     content = {
       type = "gpt";
       partitions = {

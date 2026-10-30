@@ -21,24 +21,29 @@ SSD, and `common-gpu-nvidia-disable`.
 
 ## What differs from Tsukuba
 
-- **NVIDIA GPU**: a GTX 880M, dead (error 43 in Windows). Its drivers are
-  kept from loading and the card is removed at boot, so it draws no power;
-  the screen runs on the Intel GPU. If it ever shows up again in `lspci`
-  or warms the laptop, check that profile first.
+- **NVIDIA GPU**: a GTX 880M, dead. Error 43 in Windows; in the NixOS
+  installer `nouveau` found the card and its 8 GB, but its graphics engine
+  timed out and faulted as soon as anything drew on it (2026-10-30). Its
+  drivers are kept from loading and the card is removed at boot, so it
+  draws no power; the screen runs on the Intel GPU. If it ever shows up
+  again in `lspci` or warms the laptop, check that profile first.
 - **Keyboard**: the built-in one is unplugged (dead keys, and keys that
   pressed themselves). A USB keyboard is used, Brazilian ABNT2, which is
   the layout set here. The touchpad works.
-- **Disks**: three mSATA SSDs, which the BIOS combined into one RAID 0
-  volume under Windows. RAID is off (SATA mode AHCI), and NixOS is on one
-  SSD; the other two are unused. The 1 TB hard disk was removed.
-- **Wi-Fi and Ethernet**: Killer (Qualcomm Atheros) cards with mainline
-  drivers, so nothing like Tsukuba's Broadcom setup.
+- **Disks**: three 128 GB mSATA SSDs (Toshiba THNSNH128GMCT, all healthy,
+  about 27,500 hours each), which the BIOS combined into one RAID 0 volume
+  under Windows. RAID is off (SATA mode AHCI), and NixOS is on one SSD;
+  the other two are unused. The 1 TB hard disk was removed.
+- **Wi-Fi and Ethernet**: an Intel Centrino Ultimate-N 6300 (`iwlwifi`,
+  with Intel's firmware, `hardware.enableRedistributableFirmware`) and a
+  Killer E2200 (`alx`). No Bluetooth.
 - **Video**: like the others, the Intel GPU decodes H.264 only, and the
   same browser settings apply.
 - **Battery**: dead and unplugged, so it runs on its power adapter only,
   and a power cut switches it off at once (unsaved work is lost; an
-  interrupted update is simply retried). Whether the firmware then holds
-  the CPU back, as on the MacBooks, is checked at install.
+  interrupted update is simply retried). Unlike the MacBooks, the firmware
+  doesn't hold the CPU back without it: all cores ran at 3.5 GHz under
+  load, so `fullSpeedWithoutBattery` is off.
 
 ## Installing
 
