@@ -225,6 +225,26 @@
         ];
       };
 
+      # A third family laptop, an MSI GT70 2PE from 2014, for studying
+      nixosConfigurations.Sendai = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit inputs;
+        };
+        modules = [
+          self.nixosModules.default
+          ./hosts/Sendai
+          inputs.disko.nixosModules.disko
+          # No profile for this model: the parts that fit it, a 4th
+          # generation (Haswell) Intel CPU and GPU, an SSD, and the dead
+          # NVIDIA GPU switched off
+          "${inputs.nixos-hardware}/common/cpu/intel/haswell"
+          inputs.nixos-hardware.nixosModules.common-pc-laptop
+          inputs.nixos-hardware.nixosModules.common-pc-laptop-ssd
+          inputs.nixos-hardware.nixosModules.common-gpu-nvidia-disable
+        ];
+      };
+
       # NixOS under WSL on the gaming laptop; home-manager like Aurora's,
       # but no agenix
       nixosConfigurations.Akihabara = inputs.nixpkgs.lib.nixosSystem {

@@ -115,6 +115,9 @@ jobs:
           - host: Kawaguchiko
             os: ubuntu-24.04
             attr: nixosConfigurations.Kawaguchiko.config.system.build.toplevel
+          - host: Sendai
+            os: ubuntu-24.04
+            attr: nixosConfigurations.Sendai.config.system.build.toplevel
           - host: Akihabara
             os: ubuntu-24.04
             attr: nixosConfigurations.Akihabara.config.system.build.toplevel

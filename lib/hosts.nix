@@ -49,6 +49,10 @@
       address = "100.78.232.17";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKeHiyIyphuQ1hlQ7sy+ncRlK9ITk6nKGqo08u51BCWP";
     };
+    Sendai = {
+      address = "100.79.179.48";
+      hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILl2GcNkj1NbdI/NN37QnanWiKIZTENQXD3aHhZ1nCd9";
+    };
     Tsukuba = {
       address = "100.115.41.1";
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFyxAE1e6jKPWUGoXr26i96bpKzXtpHtc+wUTtkWVhRV";
