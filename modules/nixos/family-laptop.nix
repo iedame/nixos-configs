@@ -23,6 +23,11 @@ in
       default = "yuki";
       description = "The everyday account: logged in automatically, no administrator rights.";
     };
+    userName = lib.mkOption {
+      type = lib.types.str;
+      default = "Yuki";
+      description = "The everyday account's display name, shown by Plasma and at login.";
+    };
     broadcomWl = lib.mkEnableOption ''
       Broadcom's own Wi-Fi driver (wl), for the Broadcom cards in these
       MacBooks
@@ -236,7 +241,7 @@ in
           # Uses the laptop day to day; no administrator rights
           ${cfg.user} = {
             isNormalUser = true;
-            description = "Yuki";
+            description = cfg.userName;
             extraGroups = [ "networkmanager" ];
           };
 

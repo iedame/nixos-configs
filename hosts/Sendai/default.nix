@@ -17,6 +17,7 @@
   custom.family-laptop = {
     enable = true;
     user = "nayara";
+    userName = "Nayara";
   };
 
   # The Wi-Fi (Intel Centrino Ultimate-N 6300, iwlwifi) needs Intel's
