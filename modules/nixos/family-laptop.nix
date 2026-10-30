@@ -87,9 +87,19 @@ in
         # left out for every Plasma machine, modules/nixos/plasma.nix). This is
         # Plasma's default for every user; a setting changed in System Settings
         # takes precedence.
+        #
+        # No "Switch user" either: with automatic login, SDDM puts the second
+        # login screen on the console the first session already holds, fails,
+        # and leaves that session locked behind a blank screen (Sendai,
+        # 2026-10-30). There is only one everyday account, and the
+        # administrator comes in over SSH.
         environment.etc."xdg/kdeglobals".text = ''
           [KDE]
           AnimationDurationFactor=0
+
+          [KDE Action Restrictions]
+          action/start_new_session=false
+          action/switch_user=false
         '';
         # Straight to the desktop at power-on, no password. KWallet is unlocked by
         # the login password, so with automatic login it would ask for one itself
