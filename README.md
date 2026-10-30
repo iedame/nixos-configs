@@ -13,6 +13,7 @@ other people's configurations are credited at the [end](#credits).
 | [Kawagoe](hosts/Kawagoe/README.md) | nix-darwin, aarch64-darwin | Mac mini |
 | [Tsukuba](hosts/Tsukuba/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), updates itself from this repo |
 | [Kawaguchiko](hosts/Kawaguchiko/README.md) | NixOS, x86_64-linux | Family laptop (MacBook Pro), the same set-up as Tsukuba |
+| [Sendai](hosts/Sendai/README.md) | NixOS, x86_64-linux | Family laptop (MSI GT70) for studying, the same set-up as Tsukuba |
 | [Akihabara](hosts/Akihabara/README.md) | NixOS-WSL, x86_64-linux | Command-line NixOS under WSL on the gaming laptop (Windows 11) |
 | [Narita](hosts/Narita/README.md) | NixOS, x86_64-linux | Oracle Cloud micro instance: uptime monitoring, Tailscale exit node |
 | [Nikko](hosts/Nikko/README.md) | NixOS, x86_64-linux | Oracle Cloud micro instance: uptime monitoring, Tailscale exit node |
@@ -45,7 +46,7 @@ How each host gets a merged change, and how to check that it did:
 | Host | Updates | Check |
 |---|---|---|
 | Aurora, Kawagoe, Akihabara | By hand, with `update` (below) | The switch's own output; `update-diff` for what changed |
-| Tsukuba, Kawaguchiko | By themselves, daily, from the next boot ([Tsukuba](hosts/Tsukuba/README.md#how-its-kept-up-to-date)) | `systemctl status nixos-upgrade` on the laptop |
+| Tsukuba, Kawaguchiko, Sendai | By themselves, daily, from the next boot ([Tsukuba](hosts/Tsukuba/README.md#how-its-kept-up-to-date)) | `systemctl status nixos-upgrade` on the laptop |
 | Narita, Nikko, Ginza, Nara | By themselves, about 20 minutes after a merge ([Narita](hosts/Narita/README.md#how-its-updated)) | Narita's README: whether it runs the latest system, and what a failed update means |
 
 A failed automatic update also shows up in the hosts' health reports, as a
@@ -95,7 +96,7 @@ token for it (Cloudflare dashboard, R2, "Manage API tokens": Object Read
 only, limited to this bucket), in root's AWS credentials file. On Aurora,
 Narita, Nikko and Ginza that file is an agenix secret (`cache-credentials.age` in
 `aurora/` and `shared/`; see [Secrets](#secrets)), so changing the token is
-an edit there. It is placed by hand on Tsukuba and Kawaguchiko, and once on a newly
+an edit there. It is placed by hand on the family laptops, and once on a newly
 installed Narita, Nikko or Ginza, which needs it to download its first system:
 
 ```bash
@@ -172,9 +173,9 @@ What this means in practice:
   `SECRETS_DEPLOY_KEY`).
 
 If you're not me, the config won't evaluate as is: remove the `secrets` input
-and the `age.secrets` declarations, or point them at your own. Tsukuba and
-Kawaguchiko are the exception: they use no secrets, because they update
-themselves from this public repository.
+and the `age.secrets` declarations, or point them at your own. The family
+laptops (Tsukuba, Kawaguchiko, Sendai) are the exception: they use no
+secrets, because they update themselves from this public repository.
 
 ## Credits
 
