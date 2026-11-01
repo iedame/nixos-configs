@@ -48,6 +48,11 @@
     nixkeeper.inputs.nix-darwin.follows = "nix-darwin";
     nixkeeper.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    # Rafael's own packages and modules (github.com/iedame/nur-packages,
+    # also on NUR): the RuneScape module for Aurora
+    nur-iedame.url = "github:iedame/nur-packages";
+    nur-iedame.inputs.nixpkgs.follows = "nixpkgs";
+
     # NixOS under WSL, for Akihabara
     nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
     nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
@@ -130,10 +135,6 @@
           ];
         };
 
-        # Sets home-manager options, so only for hosts that use home-manager
-        # as a NixOS module
-        runescape = ./modules/nixos/runescape.nix;
-
         # Oracle Cloud instances, by shape; each describes its hardware and
         # disk (and imports oracle.nix, what they share)
         oracle-micro = ./modules/nixos/oracle-micro.nix;
@@ -176,7 +177,9 @@
         };
         modules = [
           self.nixosModules.default
-          self.nixosModules.runescape
+          # Sets home-manager options, so only for hosts that use
+          # home-manager as a NixOS module
+          inputs.nur-iedame.nixosModules.runescape
           ./hosts/Aurora
           inputs.agenix.nixosModules.default
           inputs.home-manager.nixosModules.home-manager
