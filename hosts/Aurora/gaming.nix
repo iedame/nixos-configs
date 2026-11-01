@@ -21,7 +21,7 @@
   };
 
   # Jagex Launcher + RuneLite, with the shim that makes "Play" work on NixOS
-  # (modules/nixos/runescape.nix)
+  # (the runescape module of github.com/iedame/nur-packages)
   programs.runescape = {
     enable = true;
     users = [ "haoji" ];
