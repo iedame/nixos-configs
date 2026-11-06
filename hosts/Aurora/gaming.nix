@@ -27,6 +27,14 @@
     users = [ "haoji" ];
   };
 
+  # AppImages run in appimage-run's set of common libraries (the RuneScape
+  # module turns this on, with binfmt). Lichii's AppImage (a Switch 2
+  # emulator, run by the games account) bundles libgcrypt but not
+  # libgpg-error, which that needs and the set lacks.
+  programs.appimage.package = pkgs.appimage-run.override {
+    extraPkgs = pkgs: [ pkgs.libgpg-error ];
+  };
+
   environment.systemPackages = with pkgs; [
     # keep-sorted start case=no
     adwsteamgtk
