@@ -7,6 +7,25 @@
 let
   cfg = config.custom.beszel-agent;
   dataDir = "/var/db/beszel-agent";
+
+  # TEMPORARY (WA-6, docs/workarounds.md): one of Beszel's agent tests times
+  # out on macOS since 0.21.1 (NixOS/nixpkgs#583287), so the package fails to
+  # build there, and cache.nixos.org has no macOS build to download instead.
+  # Built here, a second test fails too: it pings 127.0.0.1, which this Mac
+  # doesn't answer with the firewall in stealth mode. Both are added to the
+  # tests nixpkgs already skips: Go keeps only the last -skip flag, so a
+  # second one would run those again.
+  beszel = pkgs.beszel.overrideAttrs (old: {
+    checkFlags =
+      let
+        skip = "^TestLegacyHubGetsSinglePayload$|^TestMonitorICMPLoopback$";
+        hasSkip = lib.any (lib.hasPrefix "-skip=") old.checkFlags;
+      in
+      if hasSkip then
+        map (f: if lib.hasPrefix "-skip=" f then "${f}|${skip}" else f) old.checkFlags
+      else
+        old.checkFlags ++ [ "-skip=${skip}" ];
+  });
 in
 {
   # The macOS counterpart of modules/nixos/beszel-agent.nix: Beszel's agent,
@@ -52,7 +71,7 @@ in
         export DATA_DIR=${dataDir}
         mkdir -p ${dataDir}
         chmod 700 ${dataDir}
-        exec ${lib.getExe' pkgs.beszel "beszel-agent"}
+        exec ${lib.getExe' beszel "beszel-agent"}
       '';
       serviceConfig = {
         RunAtLoad = true;
