@@ -14,6 +14,49 @@
     ./defaults.nix
   ];
 
+  # TEMPORARY (WA-7, docs/workarounds.md): zapfast 0.21.1 fails to build on
+  # macOS, as its openssl-sys can't find OpenSSL. The fix
+  # (NixOS/nixpkgs#585883) is merged but not yet in nixos-unstable; this
+  # makes the same change: link the system's OpenSSL and SQLCipher, and drop
+  # perl, which only built a bundled OpenSSL.
+  #
+  # TEMPORARY (WA-8, docs/workarounds.md): BBEdit 16.1, from
+  # NixOS/nixpkgs#586882 until it reaches nixos-unstable.
+  #
+  # TEMPORARY (WA-9, docs/workarounds.md): AppCleaner's zip also holds a
+  # __MACOSX folder, which ends up beside the app in Applications;
+  # NixOS/nixpkgs#586894 leaves it out when unpacking, as this does.
+  nixpkgs.overlays = [
+    (final: prev: {
+      appcleaner = prev.appcleaner.overrideAttrs {
+        installPhase = ''
+          runHook preInstall
+
+          mkdir -p $out/Applications
+          unzip -d $out/Applications $src -x '__MACOSX/*'
+
+          runHook postInstall
+        '';
+      };
+      bbedit = prev.bbedit.overrideAttrs (
+        finalAttrs: old: {
+          version = "16.1";
+          src = prev.fetchurl {
+            url = "https://s3.amazonaws.com/BBSW-download/BBEdit_${finalAttrs.version}.dmg";
+            hash = "sha256-jR3ju3eMcUSdxTs4yOGqtlh5UXXnc5U/GtzknfRxbcQ=";
+          };
+        }
+      );
+      zapfast = prev.zapfast.overrideAttrs (old: {
+        nativeBuildInputs = prev.lib.remove prev.perl old.nativeBuildInputs;
+        buildInputs = old.buildInputs ++ [
+          prev.openssl
+          prev.sqlcipher
+        ];
+      });
+    })
+  ];
+
   environment.systemPackages = with pkgs; [
     # keep-sorted start case=no
     appcleaner
