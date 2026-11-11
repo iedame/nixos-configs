@@ -238,7 +238,13 @@ jobs:
             echo "The base branch has no ${ATTR}; skipping."
             exit 0
           fi
-          nix build "${BASE}#${ATTR}" --out-link old-result
+          # A base branch that no longer builds (a package broken by the last
+          # lock update, which this pull request may be fixing) only costs
+          # the diff
+          if ! nix build "${BASE}#${ATTR}" --out-link old-result; then
+            echo "::warning::The base branch's ${ATTR} doesn't build; no package diff."
+            touch old-result-failed
+          fi
 
       - name: Build ${{ matrix.host }}
         env:
@@ -355,6 +361,8 @@ jobs:
               echo '```'
               nix run --inputs-from . nixpkgs#nvd -- --color never diff ./old-result ./result
               echo '```'
+            elif [ -e ./old-result-failed ]; then
+              echo "The base branch's system doesn't build: nothing to compare with."
             else
               echo "New host: the base branch has no system to compare with."
             fi
