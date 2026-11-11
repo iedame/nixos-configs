@@ -15,6 +15,7 @@ update: a fix that outlives its reason is easy to forget.
 | ID | What and where | Why | Remove when |
 |---|---|---|---|
 | WA-6 | Kawagoe builds Beszel with two more tests skipped, `TestLegacyHubGetsSinglePayload` and `TestMonitorICMPLoopback` (`modules/darwin/beszel-agent.nix`); since 2026-11-06 | The first times out on macOS since Beszel 0.21.1, so the package doesn't build there, and nixpkgs' build farm fails it too (NixOS/nixpkgs#583287). Kawagoe builds Beszel itself meanwhile, as the cache has no macOS build, and there the second fails as well: it pings 127.0.0.1, which Kawagoe's firewall (stealth mode) doesn't answer | NixOS/nixpkgs#583287 is fixed, or `beszel` builds on aarch64-darwin on Hydra again |
+| WA-7 | Kawagoe builds zapfast with the system's OpenSSL and SQLCipher, and without perl (`hosts/Kawagoe/default.nix`, an overlay); since 2026-11-11 | zapfast 0.21.1 fails to build on macOS: openssl-sys can't find OpenSSL. The fix, NixOS/nixpkgs#585883, makes this same change but isn't in nixos-unstable yet | The lock's nixpkgs includes NixOS/nixpkgs#585883 |
 
 Removed: WA-1, the broadcom-sta install fix, and WA-2, mcp-nixos on mcp
 1.x, both with the lock update of 2026-10-29.
