@@ -1,5 +1,19 @@
 { pkgs, ... }:
 
+let
+  # RetroArch with only these cores; more are added here, not from
+  # RetroArch's online updater (nixpkgs turns that off). Installed for both
+  # accounts, each with its own settings and saves in ~/.config/retroarch.
+  retroarch = pkgs.retroarch.withCores (
+    cores: with cores; [
+      # keep-sorted start case=no
+      bsnes
+      mesen
+      mgba
+      # keep-sorted end
+    ]
+  );
+in
 {
   # Enable ProtonTricks and GameMode
   programs.steam.protontricks.enable = true;
@@ -44,6 +58,7 @@
     mangohud
     ns-usbloader
     protonup-qt
+    retroarch
     ryubing
     wineWow64Packages.stable
     xdotool
