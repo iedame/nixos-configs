@@ -79,6 +79,14 @@
   # names the tailnet, so PAPERLESS_URL is in an agenix secret.
   services.paperless = {
     enable = true;
+    # TEMPORARY (WA-10, docs/workarounds.md): paperless-ngx 3.4.2 refuses
+    # nixpkgs' torch 2.15 (it asks for <2.15). The fix, NixOS/nixpkgs#587638,
+    # isn't in nixos-unstable yet; this makes the same change. overrideAttrs,
+    # not overridePythonAttrs: the module calls .override on the package,
+    # which only overrideAttrs keeps.
+    package = pkgs.paperless-ngx.overrideAttrs (old: {
+      pythonRelaxDeps = old.pythonRelaxDeps ++ [ "torch" ];
+    });
     mediaDir = "/backup-pool/documents/paperless/media/";
     environmentFile = config.age.secrets."paperless.env".path;
     settings = {
