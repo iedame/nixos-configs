@@ -21,6 +21,23 @@ let
     else
       "~/.1password/agent.sock";
 
+  # nix-community's builders, for building and reviewing nixpkgs work
+  # (docs/community-builders.md in github.com/nix-community/infra, which
+  # also publishes their host keys). Only public nixpkgs work goes there,
+  # never these hosts' own systems.
+  communityBuilders = {
+    build-box = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIElIQ54qAy7Dh63rBudYKdbzJHrrbrrMXLYl7Pkmk88H";
+    aarch64-build-box = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG9uyfhyli+BRtk64y+niqtb+sKquRGGZ87f4YRc8EE1";
+    darwin-build-box = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKMHhlcn7fUpUuiOFeIhDqBzBNFsbNqq+NpzuGX3e6zv";
+  };
+
+  # The public half of the key the builders know us by (1Password item
+  # "nix-community builders"). Given as the identity, it makes ssh ask the
+  # agent for that key only, not every key in 1Password.
+  communityBuildersKey = pkgs.writeText "nix-community-builders.pub" ''
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEIquXHtmTC81sELVG6TFhmDJ04Nt5hj1QZcANm46yvv
+  '';
+
   # The hosts' own keys, under both the address and the name they can be
   # reached by, so ssh knows them without asking and refuses a host that
   # presents a different key
@@ -29,6 +46,9 @@ let
       lib.mapAttrsToList (name: host: ''
         ${host.address},${lib.toLower name} ${host.hostKey}
       '') inventory.hosts
+      ++ lib.mapAttrsToList (name: key: ''
+        ${name}.nix-community.org ${key}
+      '') communityBuilders
     )
   );
 in
@@ -51,6 +71,13 @@ in
             User = inventory.admin.user;
           }
         ) inventory.hosts
+        # `ssh build-box`, `ssh aarch64-build-box`, `ssh darwin-build-box`
+        // lib.mapAttrs (name: _: {
+          HostName = "${name}.nix-community.org";
+          User = "iedame";
+          IdentityFile = "${communityBuildersKey}";
+          IdentitiesOnly = "yes";
+        }) communityBuilders
         // {
           "*" = {
             # Keys live in 1Password; the agent offers them and asks to approve
