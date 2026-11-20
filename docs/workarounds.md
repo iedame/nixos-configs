@@ -14,14 +14,14 @@ update: a fix that outlives its reason is easy to forget.
 
 | ID | What and where | Why | Remove when |
 |---|---|---|---|
-| WA-6 | Kawagoe builds Beszel with two more tests skipped, `TestLegacyHubGetsSinglePayload` and `TestMonitorICMPLoopback` (`modules/darwin/beszel-agent.nix`); since 2026-11-06 | The first times out on macOS since Beszel 0.21.1, so the package doesn't build there, and nixpkgs' build farm fails it too (NixOS/nixpkgs#583287). Kawagoe builds Beszel itself meanwhile, as the cache has no macOS build, and there the second fails as well: it pings 127.0.0.1, which Kawagoe's firewall (stealth mode) doesn't answer | NixOS/nixpkgs#583287 is fixed, or `beszel` builds on aarch64-darwin on Hydra again |
 | WA-8 | Kawagoe has BBEdit 16.1 instead of nixpkgs' 16.0.3 (`hosts/Kawagoe/default.nix`, an overlay); since 2026-11-11 | The update, NixOS/nixpkgs#586882, is open and will take a while to reach nixos-unstable | The lock's nixpkgs has `bbedit` 16.1 or newer |
 | WA-9 | Kawagoe unpacks AppCleaner without the zip's `__MACOSX` folder (`hosts/Kawagoe/default.nix`, an overlay); since 2026-11-11 | The folder ends up beside the app in Applications. NixOS/nixpkgs#586894 makes the same change, and is open | The lock's nixpkgs includes NixOS/nixpkgs#586894 |
 
 Removed: WA-1, the broadcom-sta install fix, and WA-2, mcp-nixos on mcp
 1.x, both with the lock update of 2026-10-29; WA-7, zapfast built with the
 system's OpenSSL, with the lock update of 2026-11-13; WA-10, paperless-ngx
-with torch relaxed, with the lock update of 2026-11-18.
+with torch relaxed, with the lock update of 2026-11-18; WA-6, Beszel's tests
+skipped on Kawagoe, with the lock update of 2026-11-20.
 
 ## Pins
 
