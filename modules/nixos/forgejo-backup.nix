@@ -114,9 +114,10 @@ in
         EnvironmentFile = cfg.environmentFile;
         CacheDirectory = "forgejo-restore-test";
         CacheDirectoryMode = "0700";
-        # The scratch folder: private, removed when this ends
-        RuntimeDirectory = "forgejo-restore-test";
-        RuntimeDirectoryMode = "0700";
+        # The scratch folder is on disk, in a /var/tmp of this service's own
+        # that systemd removes when it ends. Not /run, which is in memory
+        # and smaller than the backup (6.4 GiB by 2026-11-22)
+        PrivateTmp = true;
       };
       script = ''
         set -eu
@@ -129,8 +130,10 @@ in
           exit 1
         fi
 
-        ${restic} restore latest --target "$RUNTIME_DIRECTORY"
-        copy="$RUNTIME_DIRECTORY${staging}"
+        scratch=/var/tmp/restore
+        mkdir -m 700 "$scratch"
+        ${restic} restore latest --target "$scratch"
+        copy="$scratch${staging}"
 
         for key in secret_key internal_token oauth2_jwt_secret lfs_jwt_secret; do
           if [ ! -s "$copy/state/custom/conf/$key" ]; then
