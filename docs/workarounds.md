@@ -14,14 +14,14 @@ update: a fix that outlives its reason is easy to forget.
 
 | ID | What and where | Why | Remove when |
 |---|---|---|---|
-| WA-8 | Kawagoe has BBEdit 16.1 instead of nixpkgs' 16.0.3 (`hosts/Kawagoe/default.nix`, an overlay); since 2026-11-11 | The update, NixOS/nixpkgs#586882, is open and will take a while to reach nixos-unstable | The lock's nixpkgs has `bbedit` 16.1 or newer |
 | WA-9 | Kawagoe unpacks AppCleaner without the zip's `__MACOSX` folder (`hosts/Kawagoe/default.nix`, an overlay); since 2026-11-11 | The folder ends up beside the app in Applications. NixOS/nixpkgs#586894 makes the same change, and is open | The lock's nixpkgs includes NixOS/nixpkgs#586894 |
 
 Removed: WA-1, the broadcom-sta install fix, and WA-2, mcp-nixos on mcp
 1.x, both with the lock update of 2026-10-29; WA-7, zapfast built with the
 system's OpenSSL, with the lock update of 2026-11-13; WA-10, paperless-ngx
 with torch relaxed, with the lock update of 2026-11-18; WA-6, Beszel's tests
-skipped on Kawagoe, with the lock update of 2026-11-20.
+skipped on Kawagoe, with the lock update of 2026-11-20; WA-8, BBEdit 16.1
+from an overlay, with the lock update of 2026-11-24.
 
 ## Pins
 
