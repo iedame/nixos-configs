@@ -14,9 +14,6 @@
     ./defaults.nix
   ];
 
-  # TEMPORARY (WA-8, docs/workarounds.md): BBEdit 16.1, from
-  # NixOS/nixpkgs#586882 until it reaches nixos-unstable.
-  #
   # TEMPORARY (WA-9, docs/workarounds.md): AppCleaner's zip also holds a
   # __MACOSX folder, which ends up beside the app in Applications;
   # NixOS/nixpkgs#586894 leaves it out when unpacking, as this does.
@@ -32,15 +29,6 @@
           runHook postInstall
         '';
       };
-      bbedit = prev.bbedit.overrideAttrs (
-        finalAttrs: old: {
-          version = "16.1";
-          src = prev.fetchurl {
-            url = "https://s3.amazonaws.com/BBSW-download/BBEdit_${finalAttrs.version}.dmg";
-            hash = "sha256-jR3ju3eMcUSdxTs4yOGqtlh5UXXnc5U/GtzknfRxbcQ=";
-          };
-        }
-      );
     })
   ];
 
